@@ -612,6 +612,27 @@
       font-weight: 700;
       cursor: pointer;
     }
+    .forms-toolbar { display:grid; grid-template-columns:minmax(220px, 1fr) auto; gap:10px; align-items:end; margin:12px 0 16px; }
+    .forms-subnav { display:flex; gap:6px; margin-bottom:12px; }
+    .forms-subnav button.active { border-color:#f2c76a; color:#f2c76a; background:rgba(242,199,106,.09); }
+    .forms-view[hidden] { display:none !important; }
+    .forms-table-wrap { width:100%; overflow-x:auto; }
+    .forms-table { width:100%; min-width:980px; border-collapse:collapse; table-layout:auto; }
+    .forms-table th { padding:9px 10px; color:#91a8bb; font-size:12px; text-align:left; text-transform:uppercase; }
+    .forms-table td { padding:10px; border-top:1px solid rgba(146,182,216,.18); vertical-align:middle; }
+    .forms-title-btn { padding:0; border:0; background:none; color:#edf5ff; font:inherit; font-weight:700; text-align:left; cursor:pointer; text-decoration:none; }
+    .forms-title-btn:hover { color:#ffd36b; text-decoration:underline; }
+    .forms-url-row { display:flex; gap:8px; align-items:center; min-width:560px; }
+    .forms-url-row input { min-width:0; }
+    .forms-icon-btn { display:inline-grid; width:38px; height:38px; padding:0; place-items:center; flex:0 0 38px; font-size:19px; line-height:1; text-decoration:none; }
+    .forms-state-btn { min-width:78px; white-space:nowrap; }
+    .forms-edit-btn { display:inline-flex; min-height:38px; padding:0 13px; align-items:center; justify-content:center; border-radius:6px; text-decoration:none; white-space:nowrap; }
+    .forms-url-input { flex:1 1 260px; }
+    .forms-metric { font-weight:800; color:#dce8f2; }
+    .forms-pending-btn { padding:5px 9px; min-width:38px; }
+    .forms-status { display:inline-flex; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:800; }
+    .forms-status.active { color:#9be8ac; background:rgba(90,190,115,.12); }
+    .forms-status.closed { color:#b9cad9; background:rgba(146,182,216,.1); }
     .growth-toggle-btn.active {
       background: linear-gradient(180deg,#f2c76a,#d89f39);
       color: #09161d;
@@ -1267,6 +1288,7 @@
             <button type="button" class="tab-btn{% if default_tab == 'my-profile' %} active{% endif %}" data-tab="my-profile" data-profile-id="{{ current_profile_id }}">Player Profile</button>
             {% if user.is_admin %}
               <button type="button" class="tab-btn" data-tab="admin">Manage invitations</button>
+              <button type="button" class="tab-btn" data-tab="forms">Forms</button>
               <button type="button" class="tab-btn" data-tab="ac">AC</button>
             {% endif %}
             <button type="button" class="tab-btn tab-btn-disabled" disabled title="Coming soon">Hive Builder</button>
@@ -1850,6 +1872,93 @@
         {% endif %}
 
         {% if alliance and user.is_admin %}
+          <div class="tab-panel" data-tab-panel="forms" style="display:none;">
+            <div class="card">
+              <div style="display:flex; align-items:end; justify-content:space-between; gap:12px; margin-bottom:10px;">
+                <div><h2 style="margin:0;">Forms</h2><p class="muted" style="margin:4px 0 0;">Create, monitor and review player data requests.</p></div>
+                <strong>{{ roster_forms | length }} total</strong>
+              </div>
+              <div class="forms-subnav">
+                <button type="button" class="secondary active" data-forms-view="history">Form history</button>
+                <button type="button" class="secondary" data-forms-view="suggestions">Suggestions <span class="muted">({{ roster_suggestions | length }})</span></button>
+              </div>
+
+              <div class="forms-view" data-forms-panel="history">
+                <form method="post" action="/alliance/roster-form/create" class="forms-toolbar">
+                  <div class="field"><label for="new_roster_form_title">Create new form</label><input id="new_roster_form_title" name="title" maxlength="100" placeholder="Form title" required /></div>
+                  <button type="submit">Open editor</button>
+                </form>
+                {% if roster_forms %}
+                  <div class="forms-table-wrap">
+                    <table class="forms-table">
+                      <thead><tr><th>Form</th><th>Created</th><th>Status</th><th>Completed</th><th>Pending</th><th>URL and actions</th></tr></thead>
+                      <tbody>
+                        {% for roster_form in roster_forms %}
+                          <tr>
+                            <td><a class="forms-title-btn" href="/alliance/roster-form/{{ roster_form.id }}/{{ 'edit' if roster_form.status == 'draft' else 'analysis' }}" title="{{ 'Edit draft' if roster_form.status == 'draft' else 'Open form analysis' }}">{{ roster_form.title }}</a></td>
+                            <td>{{ (roster_form.created_at or '')[:10] }}</td>
+                            <td><span class="forms-status {{ roster_form.status }}">{{ roster_form.status | title }}</span></td>
+                            <td><span class="forms-metric">{{ roster_form.completed_count }}</span></td>
+                            <td><button type="button" class="secondary forms-pending-btn js-open-hero-modal" data-modal-id="pending-form-{{ roster_form.id }}" title="Show pending players">{{ roster_form.pending_count }}</button></td>
+                            <td>
+                              <div class="forms-url-row">
+                                <a class="secondary forms-edit-btn" href="/alliance/roster-form/{{ roster_form.id }}/edit">Edit</a>
+                                {% if roster_form.status == 'draft' %}
+                                  <form method="post" action="/alliance/roster-form/{{ roster_form.id }}/publish" style="margin:0;"><button type="submit" class="forms-state-btn">Create URL</button></form>
+                                {% else %}
+                                  <input class="forms-url-input" id="roster_form_url_{{ roster_form.id }}" value="{{ roster_form.url }}" readonly onclick="this.select()" {% if roster_form.status != 'active' %}disabled{% endif %} />
+                                  <button type="button" class="secondary forms-icon-btn js-copy-url" data-copy-target="roster_form_url_{{ roster_form.id }}" title="Copy public form URL" aria-label="Copy public form URL" {% if roster_form.status != 'active' %}disabled{% endif %}>⧉</button>
+                                  <form method="post" action="/alliance/roster-form/{{ roster_form.id }}/status" style="margin:0;"><input type="hidden" name="status" value="{{ 'closed' if roster_form.status == 'active' else 'active' }}" /><button type="submit" class="secondary forms-state-btn">{{ 'Close' if roster_form.status == 'active' else 'Reopen' }}</button></form>
+                                  <a class="secondary forms-icon-btn" href="/alliance/roster-form/{{ roster_form.id }}/xlsx" title="Download responses as XLSX" aria-label="Download responses as XLSX">↓</a>
+                                {% endif %}
+                                <form method="post" action="/alliance/roster-form/{{ roster_form.id }}/delete" style="margin:0;" onsubmit="return confirm('Delete this form and all its responses permanently?');"><button type="submit" class="secondary forms-icon-btn danger" title="Delete form" aria-label="Delete form">×</button></form>
+                              </div>
+                            </td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                  {% for roster_form in roster_forms %}
+                    <div class="hero-modal" id="responses-form-{{ roster_form.id }}" hidden>
+                      <div class="hero-modal-card" role="dialog" aria-modal="true" aria-labelledby="responses-form-title-{{ roster_form.id }}" style="width:min(760px,100%);">
+                        <div class="hero-modal-top"><div><h3 class="hero-modal-title" id="responses-form-title-{{ roster_form.id }}">Responses · {{ roster_form.title }}</h3><p class="muted" style="margin:4px 0 0;">{{ roster_form.completed_count }} player(s) completed this form.</p></div><button type="button" class="secondary hero-close-btn js-close-hero-modal" aria-label="Close" data-modal-id="responses-form-{{ roster_form.id }}">&times;</button></div>
+                        {% if roster_form.completed_players %}
+                          <div class="forms-table-wrap" style="margin-top:14px;"><table class="forms-table" style="min-width:0;"><thead><tr><th>Player</th><th>Player ID</th><th>Submitted</th></tr></thead><tbody>{% for player in roster_form.completed_players %}<tr><td>{{ player.player_name or player.username or 'Unnamed player' }}</td><td>{{ player.game_id }}</td><td>{{ (player.submitted_at or '')[:19] | replace('T', ' ') }}</td></tr>{% endfor %}</tbody></table></div>
+                        {% else %}
+                          <p class="muted" style="margin-top:14px;">No responses have been submitted yet.</p>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="hero-modal" id="pending-form-{{ roster_form.id }}" hidden>
+                      <div class="hero-modal-card" role="dialog" aria-modal="true" aria-labelledby="pending-form-title-{{ roster_form.id }}" style="width:min(680px,100%);">
+                        <div class="hero-modal-top"><div><h3 class="hero-modal-title" id="pending-form-title-{{ roster_form.id }}">Pending · {{ roster_form.title }}</h3><p class="muted" style="margin:4px 0 0;">{{ roster_form.pending_count }} player(s) have not completed this form.</p></div><button type="button" class="secondary hero-close-btn js-close-hero-modal" aria-label="Close" data-modal-id="pending-form-{{ roster_form.id }}">&times;</button></div>
+                        {% if roster_form.pending_players %}<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:8px;">{% for player in roster_form.pending_players %}<div style="padding:9px 10px; border:1px solid rgba(146,182,216,.2); border-radius:6px; background:#111b25;"><strong>{{ player.player_name or player.username or 'Unknown player' }}</strong><div class="muted">ID {{ player.game_id }}</div></div>{% endfor %}</div>{% else %}<p class="muted">Everyone has completed this form.</p>{% endif %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <p class="muted" style="margin:0;">No forms created yet.</p>
+                {% endif %}
+              </div>
+
+              <div class="forms-view" data-forms-panel="suggestions" hidden>
+                {% if roster_suggestions %}
+                  <div class="forms-table-wrap">
+                    <table class="forms-table">
+                      <thead><tr><th style="width:18%;">Player</th><th style="width:24%;">Form</th><th>Note or suggestion</th><th style="width:110px;">Sent</th></tr></thead>
+                    <tbody>
+                      {% for suggestion in roster_suggestions %}
+                        <tr><td style="font-weight:700;">{{ suggestion.player_name or suggestion.username or 'Unknown player' }}</td><td style="color:#b9cad9;">{{ suggestion.form_title }}</td><td style="white-space:pre-wrap;">{{ suggestion.note }}</td><td style="color:#91a8bb;">{{ (suggestion.submitted_at or '')[:10] }}</td></tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                  </div>
+                {% else %}<p class="muted" style="margin:0;">No notes or suggestions have been submitted yet.</p>{% endif %}
+              </div>
+            </div>
+          </div>
+
           <div class="tab-panel" data-tab-panel="admin" style="display:none;">
           <div class="card">
             <h2>Manage invitations</h2>
@@ -4596,6 +4705,33 @@
         });
       }
 
+      function attachFormsViews() {
+        const buttons = [...document.querySelectorAll('[data-forms-view]')];
+        const panels = [...document.querySelectorAll('[data-forms-panel]')];
+        for (const button of buttons) {
+          button.addEventListener('click', function () {
+            const target = String(button.dataset.formsView || 'history');
+            buttons.forEach(function (item) { item.classList.toggle('active', item === button); });
+            panels.forEach(function (panel) { panel.hidden = panel.dataset.formsPanel !== target; });
+          });
+        }
+        for (const button of document.querySelectorAll('.js-copy-url')) {
+          button.addEventListener('click', async function () {
+            const input = document.getElementById(button.dataset.copyTarget);
+            if (!input || !input.value) return;
+            try {
+              await navigator.clipboard.writeText(input.value);
+              const oldLabel = button.textContent;
+              button.textContent = 'Copied';
+              setTimeout(function () { button.textContent = oldLabel || 'Copy'; }, 1200);
+            } catch (_error) {
+              input.focus();
+              input.select();
+            }
+          });
+        }
+      }
+
       function abbreviateGrowthNumber(value) {
         const number = Number(value) || 0;
         const sign = number < 0 ? '-' : '';
@@ -4940,6 +5076,7 @@
       attachRefreshAllPlayers();
       attachSinglePlayerRefreshForms();
       attachHeroModals();
+      attachFormsViews();
       attachGrowthModal();
 
       const extractDetailsBtn = document.getElementById('extract_details_btn');
