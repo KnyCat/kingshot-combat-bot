@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ hero.name }} | Heroes</title>
+  <link rel="icon" type="image/webp" href="/static/favicon.webp" />
+  <link rel="stylesheet" href="/static/ui/app-theme.css" />
+  <style>
+    :root {
+      --hero-sky-top: #6eaec6;
+      --hero-sky-bottom: #3c6f86;
+      --hero-panel: #315a69;
+      --hero-panel-2: #2a4d5b;
+      --hero-panel-3: #274756;
+      --hero-line: rgba(191, 223, 231, 0.32);
+      --hero-text: #f4f8fb;
+      --hero-muted: #c5d8e2;
+      --hero-value: #2fd37b;
+      --hero-chip: #b8956c;
+      --hero-chip-2: #9f7d58;
+      --hero-chip-text: #fff5e8;
+    }
+
+    body.app-theme {
+      color: var(--hero-text);
+      background:
+        radial-gradient(circle at 50% -20%, rgba(175, 219, 235, 0.42), transparent 48%),
+        linear-gradient(180deg, var(--hero-sky-top) 0%, var(--hero-sky-bottom) 65%, #2f5f74 100%);
+    }
+
+    .app-topbar {
+      border-color: rgba(221, 241, 247, 0.34);
+      background: linear-gradient(180deg, rgba(79, 137, 161, 0.94), rgba(57, 109, 131, 0.94));
+      box-shadow: 0 12px 24px rgba(16, 46, 60, 0.3);
+    }
+
+    .app-brand h1 {
+      color: #ffffff;
+      text-shadow: 0 2px 0 rgba(25, 48, 61, 0.55);
+    }
+
+    .app-brand p {
+      color: #d4e8f0;
+    }
+
+    .app-back,
+    .app-chip-link,
+    .app-chip {
+      border-color: rgba(91, 67, 40, 0.38);
+      background: linear-gradient(180deg, var(--hero-chip) 0%, var(--hero-chip-2) 100%);
+      color: var(--hero-chip-text);
+      text-shadow: 0 1px 0 rgba(45, 30, 13, 0.36);
+      box-shadow: inset 0 -2px 0 rgba(61, 42, 21, 0.22);
+    }
+
+    .tier-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      border: 1px solid;
+    }
+
+    .tier-S { background: #8b0000; color: #ffe0e0; border-color: #cc0000; }
+    .tier-A { background: #7a3800; color: #ffe8cc; border-color: #c05a00; }
+    .tier-B { background: #6b5900; color: #fff8b0; border-color: #a88c00; }
+    .tier-C { background: #0d5c4a; color: #b0f0e0; border-color: #1a9a78; }
+    .tier-D { background: #0a3d6b; color: #b0d8ff; border-color: #1565c0; }
+
+    .app-kicker {
+      color: #e6f2f7;
+    }
+
+    .hero {
+      display: grid;
+      gap: 16px;
+    }
+
+    .hero-header,
+    .main-panel {
+      padding: 18px;
+    }
+
+    .hero-header {
+      display: grid;
+      grid-template-columns: minmax(230px, 290px) 1fr;
+      gap: 22px;
+      align-items: center;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(201, 232, 242, 0.24), transparent 36%),
+        linear-gradient(180deg, rgba(66, 118, 140, 0.95), rgba(51, 97, 117, 0.95));
+    }
+
+    .portrait-frame {
+      min-height: 310px;
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(230, 246, 251, 0.34);
+      background:
+        radial-gradient(circle at 50% 18%, rgba(221, 241, 247, 0.28), transparent 38%),
+        linear-gradient(180deg, rgba(61, 113, 136, 0.92), rgba(46, 89, 108, 0.92));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .portrait-frame img {
+      width: min(100%, 252px);
+      max-height: 332px;
+      height: auto;
+      object-fit: contain;
+      display: block;
+      filter: drop-shadow(0 18px 26px rgba(0, 0, 0, 0.34));
+    }
+
+    .hero-header-main {
+      display: grid;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .hero-title {
+      margin: 0;
+      font-size: clamp(32px, 5vw, 50px);
+      line-height: 0.98;
+      letter-spacing: 0.4px;
+      color: var(--text);
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .hero-summary {
+      margin: 0;
+      color: #ecf6fa;
+      font-size: 15px;
+      line-height: 1.62;
+      max-width: 78ch;
+    }
+
+    .hero-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .hero-meta-card,
+    .stat,
+    .skill,
+    .gear-stat-card {
+      border: 1px solid var(--hero-line);
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(49, 90, 105, 0.94), rgba(42, 77, 91, 0.96));
+    }
+
+    .hero-meta-card {
+      padding: 12px 14px;
+    }
+
+    .hero-meta-card small,
+    .stat small,
+    .gear-stat-card h3,
+    .scale-value {
+      display: block;
+      color: var(--hero-muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.45px;
+    }
+
+    .hero-meta-card b {
+      display: block;
+      margin-top: 6px;
+      color: var(--hero-text);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .main-panel {
+      display: grid;
+      gap: 18px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .stat {
+      padding: 12px 14px;
+    }
+
+    .stat b {
+      display: block;
+      margin-top: 6px;
+      font-size: 20px;
+      color: #ffffff;
+      text-shadow: 0 1px 0 rgba(24, 45, 57, 0.5);
+    }
+
+    .section h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      color: #f3fbff;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      text-shadow: 0 1px 0 rgba(23, 47, 59, 0.45);
+    }
+
+    .skills-grid,
+    .gear-skills {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .skill-column {
+      border: 1px solid var(--hero-line);
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(47, 88, 104, 0.96), rgba(38, 72, 86, 0.98));
+    }
+
+    .skill-column-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(215, 236, 243, 0.22);
+      font-size: 17px;
+      font-weight: 800;
+      color: #f8fcff;
+      background: linear-gradient(180deg, rgba(60, 109, 131, 0.96), rgba(51, 95, 114, 0.96));
+    }
+
+    .skill-column-header img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .skill-grid {
+      display: grid;
+      gap: 0;
+    }
+
+    .skill {
+      padding: 18px 16px;
+      border-top: 1px solid rgba(223, 242, 248, 0.16);
+    }
+
+    .skill:first-child {
+      border-top: 0;
+    }
+
+    .skill-top {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .skill-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      border: 1px solid rgba(224, 245, 251, 0.35);
+      object-fit: cover;
+      background: #3d6f82;
+      padding: 3px;
+    }
+
+    .skill-title {
+      margin: 0;
+      font-size: 16px;
+      color: #ffffff;
+      font-weight: 800;
+    }
+
+    .level-switcher {
+      margin-top: 10px;
+      display: inline-flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      padding: 4px;
+      border: 1px solid rgba(215, 236, 243, 0.26);
+      border-radius: 10px;
+      background: rgba(39, 74, 89, 0.78);
+    }
+
+    .level-btn {
+      border: 0;
+      background: transparent;
+      color: #d7e9f1;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .level-btn.active {
+      background: linear-gradient(180deg, #efe0c2, #d8bc91);
+      color: #573b1d;
+      font-weight: 900;
+    }
+
+    .skill-desc {
+      margin: 12px 0 0;
+      color: #edf7fb;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .skill-desc strong {
+      color: var(--hero-value);
+    }
+
+    .scale-values {
+      margin-top: 12px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .scale-value b {
+      color: var(--hero-value);
+      font-weight: 800;
+    }
+
+    .gear-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 14px;
+      padding: 14px 16px;
+      border: 1px solid var(--hero-line);
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(59, 107, 129, 0.94), rgba(44, 83, 100, 0.96));
+    }
+
+    .gear-header img {
+      width: 96px;
+      height: 96px;
+      object-fit: contain;
+      border-radius: 14px;
+      border: 1px solid rgba(224, 245, 251, 0.35);
+      background: #3a6a7d;
+      padding: 10px;
+    }
+
+    .gear-title {
+      margin: 0;
+      font-size: 24px;
+      color: #ffffff;
+    }
+
+    .gear-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .gear-stat-card {
+      padding: 12px 14px;
+    }
+
+    .gear-stat-line {
+      color: #f6fbff;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 930px) {
+      .hero-header {
+        grid-template-columns: 1fr;
+      }
+
+      .portrait-frame {
+        min-height: 252px;
+      }
+
+      .skills-grid,
+      .gear-skills {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-meta-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .stats,
+      .gear-stats,
+      .hero-meta-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .gear-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body class="app-theme">
+  <main class="app-shell">
+    <header class="app-topbar">
+      <div class="app-brand">
+        <a class="app-back" href="/heroes" aria-label="Back to heroes">&larr;</a>
+        <div>
+          <h1>{{ hero.name }}</h1>
+          <p>Detailed roster profile with the same simulator identity</p>
+        </div>
+      </div>
+      <div class="app-topbar-actions">
+        <a class="app-chip-link" href="/heroes">Heroes</a>
+        <a class="app-chip-link" href="/simulator">Combat Simulator</a>
+      </div>
+    </header>
+
+    <section class="hero">
+      <header class="app-panel hero-header">
+        <div class="portrait-frame">
+          {% if hero.full_image %}
+            <img src="{{ hero.full_image }}" alt="{{ hero.name }}" />
+          {% endif %}
+        </div>
+
+        <div class="hero-header-main">
+          <div>
+            <p class="app-kicker">Hero profile</p>
+            <h2 class="hero-title">{{ hero.name }}</h2>
+            <div class="chips">
+              <span class="app-chip">Gen {{ hero.generation }}</span>
+              <span class="app-chip">{{ hero.rarity }}</span>
+              <span class="app-chip">{% if hero.troop_icon %}<img src="{{ hero.troop_icon }}" alt="{{ hero.troop_type }}" />{% endif %}{{ hero.troop_type }}</span>
+              <span class="app-chip">{{ hero.hero_class }}</span>
+              <span class="app-chip">{{ hero.total_skill_count }} skills</span>
+              {% for badge in tier_badges %}
+                <span class="tier-chip tier-{{ badge.tier }}" title="{{ badge.category_label }}">{{ badge.tier }} {{ badge.category_label }}</span>
+              {% endfor %}
+            </div>
+          </div>
+
+          {% if hero.description %}
+            <p class="hero-summary">{{ hero.description }}</p>
+          {% endif %}
+
+          <div class="hero-meta-grid">
+            <div class="hero-meta-card">
+              <small>Where To Get</small>
+              <b>{{ hero.sources|join(', ') if hero.sources else 'N/A' }}</b>
+            </div>
+            <div class="hero-meta-card">
+              <small>Combat Profile</small>
+              <b>{{ hero.rarity }} {{ hero.hero_class }}</b>
+            </div>
+            <div class="hero-meta-card">
+              <small>Troop Specialization</small>
+              <b>{{ hero.troop_type|capitalize }}</b>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <article class="app-panel main-panel">
+        <section class="stats">
+          <div class="stat"><small>Conquest Attack</small><b>{{ hero.attack }}</b></div>
+          <div class="stat"><small>Conquest Defense</small><b>{{ hero.defense }}</b></div>
+          <div class="stat"><small>Conquest Health</small><b>{{ hero.health }}</b></div>
+          <div class="stat"><small>Expedition Attack</small><b>{{ hero.expedition_attack_pct }}%</b></div>
+          <div class="stat"><small>Expedition Defense</small><b>{{ hero.expedition_defense_pct }}%</b></div>
+          <div class="stat"><small>Skill Count</small><b>{{ hero.total_skill_count }}</b></div>
+        </section>
+
+        <section class="section">
+          <h2>Skills</h2>
+          <div class="skills-grid">
+            <section class="skill-column">
+              <div class="skill-column-header">
+                <img src="https://kingshot.net/images/heroes/conquest.png" alt="Conquest" />
+                <span>Conquest</span>
+              </div>
+              <div class="skill-grid">
+                {% for skill in hero.skills.conquest %}
+                  <article class="skill js-level-skill" data-levels='{{ skill.levels | tojson | safe }}'>
+                    <div class="skill-top">
+                      <img class="skill-icon" src="{{ skill.image_url }}" alt="{{ skill.name }}" />
+                      <div>
+                        <h3 class="skill-title">{{ skill.name }}</h3>
+                        <div class="level-switcher">
+                          {% for level in skill.levels %}
+                            <button class="level-btn {% if loop.last %}active{% endif %}" type="button" data-level-index="{{ loop.index0 }}">Lv {{ level.level }}</button>
+                          {% endfor %}
+                        </div>
+                      </div>
+                    </div>
+                    <p class="skill-desc"></p>
+                    <div class="scale-values"></div>
+                  </article>
+                {% endfor %}
+              </div>
+            </section>
+
+            <section class="skill-column">
+              <div class="skill-column-header">
+                <img src="https://kingshot.net/images/heroes/expedition.png" alt="Expedition" />
+                <span>Expedition</span>
+              </div>
+              <div class="skill-grid">
+                {% for skill in hero.skills.expedition %}
+                  <article class="skill js-level-skill" data-levels='{{ skill.levels | tojson | safe }}'>
+                    <div class="skill-top">
+                      <img class="skill-icon" src="{{ skill.image_url }}" alt="{{ skill.name }}" />
+                      <div>
+                        <h3 class="skill-title">{{ skill.name }}</h3>
+                        <div class="level-switcher">
+                          {% for level in skill.levels %}
+                            <button class="level-btn {% if loop.last %}active{% endif %}" type="button" data-level-index="{{ loop.index0 }}">Lv {{ level.level }}</button>
+                          {% endfor %}
+                        </div>
+                      </div>
+                    </div>
+                    <p class="skill-desc"></p>
+                    <div class="scale-values"></div>
+                  </article>
+                {% endfor %}
+              </div>
+            </section>
+          </div>
+        </section>
+
+        {% if hero.exclusive_gear and hero.exclusive_gear.name %}
+          <section class="section">
+            <h2>Exclusive Gear</h2>
+            <div class="gear-header">
+              {% if hero.exclusive_gear.image_url %}
+                <img src="{{ hero.exclusive_gear.image_url }}" alt="{{ hero.exclusive_gear.name }}" />
+              {% endif %}
+              <h3 class="gear-title">{{ hero.exclusive_gear.name }}</h3>
+            </div>
+
+            <div class="gear-stats">
+              {% if hero.exclusive_gear.stats.hero %}
+                <div class="gear-stat-card">
+                  <h3>Conquest</h3>
+                  {% for key, value in hero.exclusive_gear.stats.hero.items() %}
+                    <div class="gear-stat-line">{{ key|capitalize }}: {{ value }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              {% if hero.exclusive_gear.stats.escort %}
+                <div class="gear-stat-card">
+                  <h3>Escort</h3>
+                  {% for key, value in hero.exclusive_gear.stats.escort.items() %}
+                    <div class="gear-stat-line">{{ key|capitalize }}: {{ value }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              {% if hero.exclusive_gear.stats.expedition %}
+                <div class="gear-stat-card">
+                  <h3>Expedition</h3>
+                  {% for key, value in hero.exclusive_gear.stats.expedition.items() %}
+                    <div class="gear-stat-line">{{ key|replace('Pct', '')|capitalize }}: {{ value }}{% if 'Pct' in key %}%{% endif %}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="gear-skills">
+              {% for gs in hero.exclusive_gear.skills %}
+                <article class="skill js-level-skill" data-levels='{{ gs.levels | tojson | safe }}'>
+                  <div class="skill-top">
+                    <img class="skill-icon" src="{{ gs.image_url }}" alt="{{ gs.name }}" />
+                    <div>
+                      <h3 class="skill-title">{{ gs.name }}</h3>
+                      <div class="level-switcher">
+                        {% for level in gs.levels %}
+                          <button class="level-btn {% if loop.last %}active{% endif %}" type="button" data-level-index="{{ loop.index0 }}">Lv {{ level.level }}</button>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  </div>
+                  <p class="skill-desc"></p>
+                  <div class="scale-values"></div>
+                </article>
+              {% endfor %}
+            </div>
+          </section>
+        {% endif %}
+      </article>
+    </section>
+  </main>
+
+  <script>
+    function decodeHtmlEntities(text) {
+      const textarea = document.createElement('textarea');
+      textarea.innerHTML = text;
+      return textarea.value;
+    }
+
+    function sanitizeText(text) {
+      return decodeHtmlEntities(String(text || ''))
+        .replace(/\uFFFD/g, '')
+        .trim();
+    }
+
+    function highlightValues(text) {
+      return sanitizeText(text).replace(/(\d+(?:\.\d+)?%?)/g, '<strong>$1</strong>');
+    }
+
+    function renderLevelCard(card, index) {
+      let levels = [];
+      try {
+        levels = JSON.parse(card.dataset.levels || '[]');
+      } catch (error) {
+        levels = [];
+      }
+      if (!levels.length) {
+        return;
+      }
+
+      const safeIndex = Math.max(0, Math.min(index, levels.length - 1));
+      const level = levels[safeIndex];
+      const desc = card.querySelector('.skill-desc');
+      const values = card.querySelector('.scale-values');
+
+      if (desc) {
+        desc.innerHTML = highlightValues(level.description || '');
+      }
+
+      if (values) {
+        values.innerHTML = '';
+        for (const scale of (level.scale_values || [])) {
+          if (!scale || !scale.label) continue;
+          const row = document.createElement('div');
+          row.className = 'scale-value';
+          row.innerHTML = `${sanitizeText(scale.label)}: <b>${sanitizeText(scale.value || '')}</b>`;
+          values.appendChild(row);
+        }
+      }
+
+      card.querySelectorAll('.level-btn').forEach((btn, btnIndex) => {
+        btn.classList.toggle('active', btnIndex === safeIndex);
+      });
+    }
+
+    document.querySelectorAll('.js-level-skill').forEach((card) => {
+      const buttons = card.querySelectorAll('.level-btn');
+      buttons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          renderLevelCard(card, Number(btn.dataset.levelIndex || '0'));
+        });
+      });
+      renderLevelCard(card, buttons.length ? buttons.length - 1 : 0);
+    });
+  </script>
+</body>
+</html>

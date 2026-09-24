@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ roster_form.title }} · {{ alliance.name }}</title>
+  <link rel="icon" href="/static/favicon.webp">
+  <link rel="stylesheet" href="/static/ui/app-theme.css">
+  <style>
+    body{margin:0}.shell{width:min(1600px,98vw);margin:auto;padding:24px 0 48px}.mast{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:20px 24px;border:1px solid var(--line-strong);border-radius:8px;background:linear-gradient(135deg,rgba(13,17,23,.96),rgba(20,32,45,.98));box-shadow:var(--shadow-lg)}.mast h1{margin:4px 0;font-size:34px;color:#fff6d8;letter-spacing:0}.mast p{max-width:820px;margin:4px 0 0;color:var(--muted);font-size:16px;line-height:1.55}.eyebrow{color:#81e4ff;font-size:14px;font-weight:800;text-transform:uppercase}.notice{margin:14px 0;padding:14px 16px;border:1px solid var(--danger);border-radius:8px;background:#111b25;color:var(--text);font-size:16px;line-height:1.55}.notice.ok{border-color:var(--ok)}form{margin-top:14px}section{background:linear-gradient(180deg,rgba(27,36,48,.98),rgba(17,24,38,.98));border:1px solid var(--line);border-radius:8px;padding:20px 22px;margin:14px 0;box-shadow:var(--shadow-md)}h2{margin:0 0 15px;font-size:23px;color:#fff6d8;letter-spacing:0}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.wide{grid-column:1/-1}label{display:grid;gap:8px;color:var(--text);font-size:16px;font-weight:700}.optional,.ar{color:var(--muted);font-size:14px;font-weight:400}.ar{display:block;direction:rtl}input,select,textarea{width:100%;min-height:48px;border:1px solid var(--line);background:#0d171f;color:var(--text);padding:11px 13px;font:inherit;font-size:16px;border-radius:6px}input:focus,select:focus,textarea:focus{outline:2px solid rgba(97,218,251,.35);border-color:var(--accent)}textarea{min-height:100px;resize:vertical}.submit{min-height:46px;padding:11px 18px;border:1px solid var(--accent-strong);border-radius:6px;background:#10202b;color:#81e4ff;font-size:16px;font-weight:800;cursor:pointer}.submit:hover{background:#173244}@media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:700px){.shell{width:min(100% - 20px,1600px);padding:10px 0 28px}.mast{padding:16px}.mast h1{font-size:27px}section{padding:16px}.grid{grid-template-columns:1fr}.mast p,.notice,label,input,select,textarea{font-size:15px}}
+    [data-power-ocr-status]{display:inline-flex;align-items:center;gap:9px;min-height:28px}
+    [data-power-ocr].is-reading [data-power-ocr-status]::before{content:"";width:18px;height:18px;border:3px solid rgba(129,228,255,.25);border-top-color:#81e4ff;border-radius:50%;animation:power-ocr-spin .75s linear infinite}
+    @keyframes power-ocr-spin{to{transform:rotate(360deg)}}
+    .field-requirement{display:inline-block;margin-left:6px;font-size:12px;font-weight:800}.field-requirement.required{color:#ffd36b}.field-requirement.optional{color:var(--muted)}
+    .multi-options{display:flex;flex-wrap:nowrap;gap:8px}.multi-option{display:flex;flex:0 1 auto;align-items:center;gap:6px;min-width:0;min-height:44px;padding:9px 8px;border:1px solid var(--line);border-radius:6px;background:#0d171f;white-space:nowrap}.multi-option input{flex:0 0 auto;width:auto;min-height:0;margin:0}
+  </style>
+</head>
+<body class="app-theme">
+<main class="shell">
+  <header class="mast"><div><div class="eyebrow">{{ alliance.name }} · Transfer application</div><h1>{{ roster_form.title }}</h1><p>Apply to join the alliance after transferring to this kingdom.<span class="ar">قدّم طلب الانضمام إلى التحالف بعد الانتقال إلى هذه المملكة.</span></p></div></header>
+  {% if error %}<p class="notice">{{ error }}</p>{% endif %}
+  {% if submitted %}<div class="notice ok"><strong>Application received.</strong><br>Submitting again with the same Player ID will update your application.<p class="ar">تم استلام الطلب. سيؤدي الإرسال مرة أخرى بنفس رقم اللاعب إلى تحديث طلبك.</p></div>{% else %}
+  <form method="post">
+    {% for section in sections %}<section><h2>{{ section.title }}</h2>{% if section.title == 'Power breakdown' %}<div data-power-ocr data-endpoint="/forms/{{ roster_form.token }}/extract-power-breakdown" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 16px;"><input type="file" accept="image/*" style="width:auto;flex:1 1 260px;"><button class="submit" type="button">Read screenshot</button><span class="optional" data-power-ocr-status>Upload the expanded Power summary screenshot.</span></div>{% endif %}<div class="grid">
+      {% for field in section.fields %}<label class="{% if field.type == 'textarea' %}wide{% endif %}"><span>{{ field.label }} <span class="field-requirement {{ 'required' if field.required else 'optional' }}">{{ 'Required' if field.required else 'Optional' }}</span></span>
+        {% if field.type == 'textarea' %}<textarea name="{{ field.name }}" {% if field.required %}required{% endif %}>{{ values.get(field.name,'') }}</textarea>
+        {% elif field.type == 'timezone' %}<select class="js-timezone" name="{{ field.name }}" data-value="{{ values.get(field.name,'') }}" {% if field.required %}required{% endif %}></select>
+        {% elif field.type == 'calculated' %}<input name="{{ field.name }}" class="js-march-capacity-result" type="number" value="{{ values.get(field.name,'') }}" readonly {% if field.required %}required{% endif %}>
+        {% elif field.type == 'multiselect' %}<span class="multi-options" data-multiselect {% if field.required %}data-required="true"{% endif %}>{% set selected_values = values.get(field.name,'').split(', ') %}{% for option in field.options %}<label class="multi-option"><input type="checkbox" name="{{ field.name }}" value="{{ option }}" {% if option in selected_values %}checked{% endif %}> <span>{{ option }}</span></label>{% endfor %}</span>
+        {% elif field.type in ['select','radio'] %}<select name="{{ field.name }}" {% if field.required %}required{% endif %}><option value="">Choose...</option>{% for option in field.options %}<option value="{{ option }}" {% if values.get(field.name)==option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select>
+        {% else %}<input name="{{ field.name }}" type="{{ 'number' if field.type == 'number' else 'text' }}" value="{{ values.get(field.name,'') }}" {% if field.name == 'game_id' %}inputmode="numeric" pattern="[0-9]+"{% endif %} {% if field.required %}required{% endif %}>{% endif %}
+      </label>{% endfor %}
+    </div></section>{% endfor %}
+    <button class="submit" type="submit">Send my application</button>
+  </form>{% endif %}
+</main>
+<script src="/static/ui/timezone-field.js"></script>
+<script src="/static/ui/march-capacity-field.js"></script>
+<script src="/static/ui/power-breakdown-ocr.js?v=3"></script>
+<script>document.querySelectorAll('[data-multiselect]').forEach(group=>{const boxes=[...group.querySelectorAll('input[type="checkbox"]')];const none=boxes.find(box=>box.value==='None of them');const validate=()=>{boxes[0]?.setCustomValidity(group.dataset.required==='true'&&!boxes.some(box=>box.checked)?'Select at least one option.':'')};boxes.forEach(box=>box.addEventListener('change',()=>{if(box===none&&box.checked)boxes.filter(item=>item!==none).forEach(item=>item.checked=false);else if(box.checked&&none)none.checked=false;validate()}));validate()});</script>
+</body>
+</html>

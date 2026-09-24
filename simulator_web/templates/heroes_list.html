@@ -1,0 +1,913 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Heroes | Kingshot Simulator</title>
+  <link rel="icon" type="image/webp" href="/static/favicon.webp" />
+  <style>
+    :root {
+      --page-bg: #3d2f24;
+      --frame: #c19557;
+      --frame-dark: #8d6335;
+      --panel: #e8d1a8;
+      --panel-soft: #f2e5ca;
+      --bar: #7a5a3c;
+      --bar-edge: #62442a;
+      --tile-top: #f7c96a;
+      --tile-bottom: #d88c14;
+      --tile-epic-top: #b78eff;
+      --tile-epic-bottom: #7f51c7;
+      --tile-rare-top: #9ad8ff;
+      --tile-rare-bottom: #5293c8;
+      --text: #fff7ea;
+      --text-dark: #4d3217;
+      --muted: #7b5a37;
+      --cream: #f7ecd8;
+      --shadow: 0 12px 24px rgba(24, 12, 5, 0.3);
+      --grid-gap: 14px;
+      --card-radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top, rgba(255, 213, 131, 0.12), transparent 20%),
+        linear-gradient(180deg, #4b3729 0%, #2e2118 100%);
+      color: var(--text);
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    }
+
+    .page {
+      width: min(1440px, 96vw);
+      margin: 0 auto;
+      padding: 18px 0 26px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      background: linear-gradient(180deg, #8e6a44 0%, #6f5033 100%);
+      border: 2px solid #a57e53;
+      border-radius: 20px;
+      padding: 12px 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .topbar-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .back {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 0;
+      background: linear-gradient(180deg, #9fe7f0 0%, #57becd 100%);
+      color: #fff;
+      font-size: 21px;
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.16);
+    }
+
+    .title-stack h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .title-stack p {
+      margin: 4px 0 0;
+      color: #f3dcc0;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sim-link {
+      text-decoration: none;
+      color: var(--text);
+      font-weight: 800;
+      font-size: 13px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: rgba(255, 248, 236, 0.08);
+      border: 1px solid rgba(255, 244, 221, 0.24);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, #e8d8b8 0%, #d7bb8e 100%);
+      border: 3px solid var(--frame);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      color: var(--text-dark);
+      padding: 16px;
+      position: sticky;
+      top: 16px;
+    }
+
+    .sidebar h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+      color: #5a3816;
+    }
+
+    .sidebar p {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .filters {
+      display: grid;
+      gap: 10px;
+    }
+
+    .compare-module {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 2px dashed rgba(106, 76, 41, 0.28);
+      display: grid;
+      gap: 10px;
+    }
+
+    .compare-module h3 {
+      margin: 0;
+      font-size: 16px;
+      color: #5a3816;
+    }
+
+    .compare-module p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+      font-weight: 700;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.45px;
+      color: #684722;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      border-radius: 12px;
+      border: 2px solid #caad7d;
+      background: var(--cream);
+      color: #513114;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 700;
+      outline: none;
+    }
+
+    .filter-actions {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 12px;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      color: var(--text);
+      background: linear-gradient(180deg, #7b5b39 0%, #614226 100%);
+      box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.22);
+    }
+
+    .compare-btn {
+      width: 100%;
+      margin-top: 2px;
+    }
+
+    .reset {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 12px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 900;
+      color: #6b4925;
+      background: #f6ead1;
+      border: 2px solid #caad7d;
+    }
+
+    .roster-shell {
+      background: linear-gradient(180deg, #f0debb 0%, #dfc391 100%);
+      border: 3px solid var(--frame);
+      border-radius: 24px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .roster-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      background: linear-gradient(180deg, #826142 0%, #67482d 100%);
+      border: 2px solid var(--bar-edge);
+      border-radius: 16px;
+      padding: 10px 12px;
+    }
+
+    .roster-head .label {
+      font-size: 14px;
+      font-weight: 900;
+      color: var(--text);
+      letter-spacing: 0.3px;
+    }
+
+    .sort-pill {
+      min-width: 152px;
+      border-radius: 10px;
+      border: 2px solid rgba(255, 235, 201, 0.12);
+      background: rgba(53, 31, 12, 0.35);
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .roster-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: var(--grid-gap);
+    }
+
+    .hero-card {
+      text-decoration: none;
+      color: inherit;
+      min-height: 236px;
+      border-radius: var(--card-radius);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      border: 2px solid #c37b00;
+      background: linear-gradient(180deg, var(--tile-top) 0%, var(--tile-bottom) 100%);
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,0.18),
+        0 7px 12px rgba(69, 35, 2, 0.26);
+      position: relative;
+      transition: transform 120ms ease, filter 120ms ease;
+    }
+
+    .hero-card.epic {
+      background: linear-gradient(180deg, var(--tile-epic-top) 0%, var(--tile-epic-bottom) 100%);
+      border-color: #6b42b4;
+    }
+
+    .hero-card.rare {
+      background: linear-gradient(180deg, var(--tile-rare-top) 0%, var(--tile-rare-bottom) 100%);
+      border-color: #427db0;
+    }
+
+    .hero-card:hover {
+      transform: translateY(-2px);
+      filter: saturate(1.05);
+    }
+
+    .card-top {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 8px 4px 0;
+    }
+
+    .portrait {
+      width: 100%;
+      height: 164px;
+      object-fit: contain;
+      object-position: center bottom;
+      display: block;
+      filter: drop-shadow(0 6px 12px rgba(65, 30, 0, 0.22));
+    }
+
+    .type-chip,
+    .gen-chip {
+      position: absolute;
+      top: 7px;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 900;
+      color: #fff9eb;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.25);
+      box-shadow: inset 0 -2px 0 rgba(0,0,0,0.18);
+    }
+
+    .type-chip {
+      left: 7px;
+      background: linear-gradient(180deg, #8db5e8 0%, #567fb6 100%);
+      padding: 3px;
+    }
+
+    .type-chip img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .gen-chip {
+      right: 7px;
+      width: auto;
+      min-width: 36px;
+      padding: 0 8px;
+      background: linear-gradient(180deg, #8c623b 0%, #6d4826 100%);
+      font-size: 13px;
+    }
+
+    .card-bottom {
+      background: linear-gradient(180deg, rgba(111, 67, 19, 0.18) 0%, rgba(84, 45, 4, 0.35) 100%);
+      padding: 8px 8px 10px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .hero-name {
+      font-size: 14px;
+      font-weight: 900;
+      color: #fff7ea;
+      text-shadow: 0 2px 0 rgba(84, 37, 0, 0.45);
+      line-height: 1.05;
+      min-height: 30px;
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .hero-meta {
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 900;
+      color: #ffe8bf;
+      text-shadow: 0 1px 0 rgba(84, 37, 0, 0.38);
+    }
+
+    .empty {
+      padding: 30px 20px;
+      text-align: center;
+      color: #6a4c29;
+      font-weight: 800;
+      background: rgba(255, 249, 238, 0.45);
+      border: 2px dashed rgba(128, 88, 43, 0.35);
+      border-radius: 18px;
+    }
+
+    @media (max-width: 1100px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+      }
+
+      .roster-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 920px) {
+      .roster-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      .topbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .top-actions {
+        justify-content: space-between;
+      }
+
+      .roster-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .page {
+        width: 98vw;
+      }
+
+      .roster-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .hero-card {
+        min-height: 198px;
+      }
+
+      .portrait {
+        height: 130px;
+      }
+    }
+
+    /* ── Tier badges on cards ── */
+    .hero-tier-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      margin-top: 5px;
+    }
+
+    .tier-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 8px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      line-height: 1.2;
+    }
+
+    .tier-S { background: #8b0000; color: #ffe0e0; border: 1px solid #cc0000; }
+    .tier-A { background: #7a3800; color: #ffe8cc; border: 1px solid #c05a00; }
+    .tier-B { background: #6b5900; color: #fff8b0; border: 1px solid #a88c00; }
+    .tier-C { background: #0d5c4a; color: #b0f0e0; border: 1px solid #1a9a78; }
+    .tier-D { background: #0a3d6b; color: #b0d8ff; border: 1px solid #1565c0; }
+
+    /* ── Tier toggle button ── */
+    .tier-toggle-btn {
+      border: 1px solid #c19557;
+      background: linear-gradient(180deg, #9b7540 0%, #7a5a2e 100%);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: filter 120ms;
+    }
+
+    .tier-toggle-btn.active {
+      background: linear-gradient(180deg, #f7c96a 0%, #d88c14 100%);
+      color: #3d1f00;
+      border-color: #d4a017;
+    }
+
+    .tier-toggle-btn:hover { filter: brightness(1.1); }
+
+    /* ── Tier List view ── */
+    .tier-view {
+      display: none;
+      flex-direction: column;
+      gap: 28px;
+      margin-top: 4px;
+    }
+
+    .tier-view.visible { display: flex; }
+
+    .tier-section {
+      background: linear-gradient(180deg, #e8d8b8 0%, #d7bb8e 100%);
+      border: 3px solid var(--frame);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 18px 16px;
+    }
+
+    .tier-section-title {
+      margin: 0 0 14px;
+      font-size: 20px;
+      color: #5a3816;
+      font-weight: 900;
+    }
+
+    .tier-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .tier-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .tier-row-label {
+      width: 44px;
+      min-width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 900;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .tier-row-heroes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tier-hero-card {
+      text-decoration: none;
+      color: inherit;
+      width: 80px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid #c37b00;
+      background: linear-gradient(180deg, var(--tile-top) 0%, var(--tile-bottom) 100%);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15), 0 4px 8px rgba(69,35,2,0.22);
+      transition: transform 120ms ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .tier-hero-card.epic {
+      background: linear-gradient(180deg, var(--tile-epic-top) 0%, var(--tile-epic-bottom) 100%);
+      border-color: #6b42b4;
+    }
+
+    .tier-hero-card.rare {
+      background: linear-gradient(180deg, var(--tile-rare-top) 0%, var(--tile-rare-bottom) 100%);
+      border-color: #427db0;
+    }
+
+    .tier-hero-card:hover { transform: translateY(-2px); }
+
+    .tier-portrait {
+      width: 76px;
+      height: 88px;
+      object-fit: contain;
+      object-position: center bottom;
+      display: block;
+    }
+
+    .tier-hero-name {
+      font-size: 9px;
+      font-weight: 900;
+      color: #fff7ea;
+      text-align: center;
+      padding: 4px 4px 5px;
+      text-shadow: 0 1px 0 rgba(84,37,0,0.4);
+      line-height: 1.1;
+      background: linear-gradient(180deg, rgba(111,67,19,0.18) 0%, rgba(84,45,4,0.35) 100%);
+      border-top: 1px solid rgba(255,255,255,0.2);
+      width: 100%;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div class="topbar-title">
+        <a class="back" href="/">&larr;</a>
+        <div class="title-stack">
+          <h1>Heroes</h1>
+          <p>{{ total }} of {{ all_total }} visible</p>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <button class="tier-toggle-btn" type="button" id="tierToggleBtn">📊 Tier List</button>
+        <a class="sim-link" href="/coordinated-attack">Coordinated Attack</a>
+        <a class="sim-link" href="/simulator">Combat Simulator</a>
+      </div>
+    </header>
+
+    <section class="layout">
+      <aside class="sidebar">
+        <h2>Roster Filter</h2>
+
+        <form class="filters" method="get" action="/heroes">
+          <div class="field">
+            <label for="q">Search</label>
+            <input id="q" type="text" name="q" value="{{ filters.q }}" placeholder="Hero name" />
+          </div>
+
+          <div class="field">
+            <label for="sort">Sort</label>
+            <select id="sort" name="sort">
+              <option value="generation" {% if filters.sort == 'generation' %}selected{% endif %}>Generation</option>
+              <option value="rarity" {% if filters.sort == 'rarity' %}selected{% endif %}>Rarity</option>
+              <option value="name" {% if filters.sort == 'name' %}selected{% endif %}>Name</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="generation">Generation</label>
+            <select id="generation" name="generation">
+              <option value="">All</option>
+              {% for gen in generations %}
+                <option value="{{ gen }}" {% if filters.generation == gen|string %}selected{% endif %}>Gen {{ gen }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="rarity">Rarity</label>
+            <select id="rarity" name="rarity">
+              <option value="">All</option>
+              {% for r in rarities %}
+                <option value="{{ r }}" {% if filters.rarity|lower == r|lower %}selected{% endif %}>{{ r }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="troop_type">Type</label>
+            <select id="troop_type" name="troop_type">
+              <option value="">All</option>
+              {% for t in troop_types %}
+                <option value="{{ t }}" {% if filters.troop_type|lower == t|lower %}selected{% endif %}>{{ t }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="tier_category">Tier List</label>
+            <select id="tier_category" name="tier_category" onchange="document.getElementById('tier_rank_field').style.display=this.value?'block':'none'">
+              <option value="">All Categories</option>
+              {% for cat_key, cat_data in tier_list_data.items() %}
+                <option value="{{ cat_key }}" {% if filters.tier_category == cat_key %}selected{% endif %}>{{ cat_data.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="field" id="tier_rank_field" {% if not filters.tier_category %}style="display:none"{% endif %}>
+            <label for="tier_rank">Tier</label>
+            <select id="tier_rank" name="tier_rank">
+              <option value="">All Tiers</option>
+              {% for rank in tier_rank_order %}
+                <option value="{{ rank }}" {% if filters.tier_rank == rank %}selected{% endif %}>Tier {{ rank }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="filter-actions">
+            <button class="btn" type="submit">Apply</button>
+            <a class="reset" href="/heroes">Reset</a>
+          </div>
+        </form>
+
+        <form class="compare-module" method="get" action="/heroes/compare">
+          <h3>Hero Compare</h3>
+
+          <div class="field">
+            <label for="compare_left">Hero A</label>
+            <select id="compare_left" name="left" required>
+              <option value="">Select hero</option>
+              {% for option in compare_options %}
+                <option value="{{ option.slug }}" data-troop="{{ option.troop_type|lower }}">{{ option.name }} (S{{ option.generation }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="compare_right">Hero B</label>
+            <select id="compare_right" name="right" required>
+              <option value="">Select hero</option>
+              {% for option in compare_options %}
+                <option value="{{ option.slug }}" data-troop="{{ option.troop_type|lower }}">{{ option.name }} (S{{ option.generation }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <button class="btn compare-btn" type="submit">Compare</button>
+        </form>
+      </aside>
+
+      <section class="roster-shell">
+        <div class="roster-head">
+          <div class="label">Hero list</div>
+          <div>
+            <select class="sort-pill" name="sort" onchange="const url=new URL(window.location); url.searchParams.set('sort', this.value); window.location=url;">
+              <option value="generation" {% if filters.sort == 'generation' %}selected{% endif %}>Generation</option>
+              <option value="rarity" {% if filters.sort == 'rarity' %}selected{% endif %}>Rarity</option>
+              <option value="name" {% if filters.sort == 'name' %}selected{% endif %}>Name</option>
+            </select>
+          </div>
+        </div>
+
+        {% if heroes %}
+          <div class="roster-grid">
+            {% for hero in heroes %}
+              <a class="hero-card {{ hero.rarity|lower }}" href="/heroes/{{ hero.slug }}">
+                <div class="card-top">
+                  <span class="type-chip">{% if hero.troop_icon %}<img src="{{ hero.troop_icon }}" alt="{{ hero.troop_type }}" />{% endif %}</span>
+                  <span class="gen-chip">S{{ hero.generation }}</span>
+                  {% if hero.card_image %}
+                    <img class="portrait" src="{{ hero.card_image }}" alt="{{ hero.name }}" loading="lazy" />
+                  {% endif %}
+                </div>
+
+                <div class="card-bottom">
+                  <div class="hero-name">{{ hero.name }}</div>
+                  <div class="hero-meta">
+                    <span>{{ hero.rarity }}</span>
+                    <span>{{ hero.hero_class }}</span>
+                  </div>
+                  {% if hero.tier_badges %}
+                    <div class="hero-tier-badges">
+                      {% for badge in hero.tier_badges %}
+                        <span class="tier-badge tier-{{ badge.tier }}" title="{{ badge.category_label }}">{{ badge.tier }} {{ badge.short }}</span>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty">No heroes match the selected filters.</div>
+        {% endif %}
+      </section>
+    </section>
+
+    <div class="tier-view" id="tierView">
+      {% for cat_key, cat_data in tier_list_data.items() %}
+        <section class="tier-section">
+          <h2 class="tier-section-title">{{ cat_data.label }}</h2>
+          <div class="tier-rows">
+            {% for rank in tier_rank_order %}
+              {% if heroes_for_tier_view[cat_key][rank] is defined and heroes_for_tier_view[cat_key][rank] %}
+                <div class="tier-row">
+                  <div class="tier-row-label tier-{{ rank }}">{{ rank }}</div>
+                  <div class="tier-row-heroes">
+                    {% for hero in heroes_for_tier_view[cat_key][rank] %}
+                      <a class="tier-hero-card {{ hero.rarity|lower }}" href="/heroes/{{ hero.slug }}" title="{{ hero.name }}">
+                        {% if hero.card_image %}
+                          <img class="tier-portrait" src="{{ hero.card_image }}" alt="{{ hero.name }}" loading="lazy" />
+                        {% endif %}
+                        <div class="tier-hero-name">{{ hero.name }}</div>
+                      </a>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </section>
+      {% endfor %}
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      const leftSelect = document.getElementById('compare_left');
+      const rightSelect = document.getElementById('compare_right');
+
+      if (!leftSelect || !rightSelect) {
+        return;
+      }
+
+      const allRightOptions = Array.from(rightSelect.options)
+        .slice(1)
+        .map((option) => ({
+          value: option.value,
+          text: option.text,
+          troop: (option.dataset.troop || '').toLowerCase(),
+        }));
+
+      function renderRightOptions() {
+        const leftOption = leftSelect.options[leftSelect.selectedIndex];
+        const selectedTroop = (leftOption?.dataset?.troop || '').toLowerCase();
+        const selectedLeftHero = leftSelect.value;
+        const previousRightValue = rightSelect.value;
+
+        rightSelect.length = 1;
+
+        const allowed = allRightOptions.filter((item) => {
+          if (item.value === selectedLeftHero) {
+            return false;
+          }
+          if (!selectedTroop) {
+            return true;
+          }
+          return item.troop === selectedTroop;
+        });
+
+        for (const item of allowed) {
+          const option = document.createElement('option');
+          option.value = item.value;
+          option.text = item.text;
+          option.dataset.troop = item.troop;
+          rightSelect.add(option);
+        }
+
+        const canRestore = allowed.some((item) => item.value === previousRightValue);
+        rightSelect.value = canRestore ? previousRightValue : '';
+      }
+
+      leftSelect.addEventListener('change', renderRightOptions);
+      renderRightOptions();
+    })();
+
+    // Tier list toggle
+    (function () {
+      const btn = document.getElementById('tierToggleBtn');
+      const tierView = document.getElementById('tierView');
+      const layout = document.querySelector('.layout');
+      const backBtn = document.querySelector('.back');
+      const titleH1 = document.querySelector('.title-stack h1');
+      const titleP = document.querySelector('.title-stack p');
+      if (!btn || !tierView || !layout) return;
+
+      function openTierView() {
+        tierView.classList.add('visible');
+        layout.style.display = 'none';
+        btn.classList.add('active');
+        btn.textContent = '\ud83d\udccb Heroes';
+        if (titleH1) titleH1.textContent = 'Tier List';
+        if (titleP) titleP.textContent = 'Attack Leaders · Defenders Leaders · Joiner · Bear Hunt';
+        if (backBtn) {
+          backBtn.setAttribute('data-orig-href', backBtn.getAttribute('href'));
+          backBtn.setAttribute('href', '#');
+          backBtn.addEventListener('click', closeTierView);
+        }
+      }
+
+      function closeTierView(e) {
+        if (e) e.preventDefault();
+        tierView.classList.remove('visible');
+        layout.style.display = '';
+        btn.classList.remove('active');
+        btn.textContent = '\ud83d\udcca Tier List';
+        if (titleH1) titleH1.textContent = 'Heroes';
+        if (titleP) titleP.textContent = '{{ total }} of {{ all_total }} visible';
+        if (backBtn) {
+          backBtn.setAttribute('href', backBtn.getAttribute('data-orig-href') || '/');
+          backBtn.removeEventListener('click', closeTierView);
+        }
+      }
+
+      btn.addEventListener('click', function () {
+        if (tierView.classList.contains('visible')) {
+          closeTierView();
+        } else {
+          openTierView();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
+

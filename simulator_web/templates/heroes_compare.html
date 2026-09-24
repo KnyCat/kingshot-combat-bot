@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hero Compare | Kingshot Simulator</title>
+  <link rel="icon" type="image/webp" href="/static/favicon.webp" />
+  <style>
+    :root {
+      --bg: #10202b;
+      --panel: #1a3442;
+      --panel-2: #152c38;
+      --line: rgba(188, 226, 238, 0.34);
+      --text: #f4fbff;
+      --muted: #c2dbe6;
+      --gold: #f2d39f;
+      --gold-2: #c79a64;
+      --ok: #38d67f;
+      --warn: #f9cb78;
+      --shadow: 0 14px 26px rgba(8, 20, 27, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 50% -10%, rgba(167, 218, 234, 0.34), transparent 44%),
+        linear-gradient(180deg, #6aa8c0 0%, #4f849b 45%, #356074 100%);
+    }
+
+    .page {
+      width: min(1240px, 94vw);
+      margin: 0 auto;
+      padding: 20px 0 36px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border: 2px solid rgba(212, 237, 247, 0.38);
+      border-radius: 18px;
+      padding: 12px 14px;
+      background: linear-gradient(180deg, rgba(89, 140, 162, 0.96), rgba(66, 114, 133, 0.96));
+      box-shadow: var(--shadow);
+    }
+
+    .left-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .back {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 1px solid rgba(116, 83, 45, 0.32);
+      background: linear-gradient(180deg, var(--gold), var(--gold-2));
+      color: #fff8ef;
+      text-shadow: 0 1px 0 rgba(61, 39, 17, 0.4);
+      font-size: 20px;
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      box-shadow: inset 0 -2px 0 rgba(63, 42, 21, 0.24);
+    }
+
+    .title h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1;
+      color: #ffffff;
+    }
+
+    .title p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: #d6eaf2;
+    }
+
+    .sim-link {
+      text-decoration: none;
+      border-radius: 11px;
+      padding: 10px 14px;
+      border: 1px solid rgba(116, 83, 45, 0.32);
+      background: linear-gradient(180deg, var(--gold), var(--gold-2));
+      color: #fff8ef;
+      text-shadow: 0 1px 0 rgba(61, 39, 17, 0.4);
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .notice {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: linear-gradient(180deg, rgba(26, 52, 66, 0.94), rgba(21, 44, 56, 0.96));
+      color: var(--muted);
+      box-shadow: var(--shadow);
+      font-weight: 700;
+    }
+
+    .compare-panel {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(26, 52, 66, 0.95), rgba(21, 44, 56, 0.97));
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 14px;
+    }
+
+    .progression-form {
+      display: grid;
+      gap: 10px;
+    }
+
+    .progression-card {
+      border: 1px solid rgba(208, 234, 244, 0.22);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(23, 46, 58, 0.7);
+      display: grid;
+      gap: 8px;
+    }
+
+    .progression-card h3 {
+      margin: 0;
+      font-size: 12px;
+      color: #f7fcff;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .progression-row {
+      display: grid;
+      gap: 5px;
+    }
+
+    .progression-row label {
+      font-size: 11px;
+      color: #d0e5ee;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      font-weight: 700;
+    }
+
+    .star-level-text {
+      margin: 0;
+      font-size: 11px;
+      color: #d8eaf2;
+      font-weight: 700;
+    }
+
+    .star-control {
+      display: flex;
+      gap: 2px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .star-unit {
+      width: 28px;
+      height: 28px;
+      flex: 0 0 28px;
+    }
+
+    .star-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .star-seg {
+      fill: rgba(74, 95, 105, 0.9);
+      stroke: rgba(210, 231, 239, 0.22);
+      stroke-width: 1;
+      stroke-linejoin: round;
+      cursor: pointer;
+      transition: fill 120ms ease, stroke 120ms ease;
+    }
+
+    .star-seg:hover {
+      stroke: rgba(255, 244, 199, 0.7);
+    }
+
+    .star-seg.active {
+      fill: #ffca28;
+      stroke: rgba(255, 238, 177, 0.65);
+      filter: drop-shadow(0 0 2px rgba(255, 210, 78, 0.5));
+    }
+
+    .widget-line {
+      display: grid;
+      gap: 6px;
+    }
+
+    .widget-line input[type="range"] {
+      width: 100%;
+      accent-color: #9ad8ff;
+    }
+
+    .widget-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #d3e8f0;
+      font-weight: 700;
+    }
+
+    .widget-value {
+      color: #fff;
+    }
+
+    .progression-actions {
+      display: none;
+    }
+
+    .apply-btn {
+      border: 1px solid rgba(116, 83, 45, 0.32);
+      border-radius: 11px;
+      padding: 10px 14px;
+      background: linear-gradient(180deg, var(--gold), var(--gold-2));
+      color: #fff8ef;
+      text-shadow: 0 1px 0 rgba(61, 39, 17, 0.4);
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .showcase {
+      display: grid;
+      grid-template-columns: 1fr minmax(220px, 0.7fr) 1fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .vs-banner {
+      border: 1px solid rgba(208, 234, 244, 0.18);
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(9, 26, 34, 0.95), rgba(7, 21, 29, 0.95));
+      padding: 10px 14px;
+      text-align: center;
+    }
+
+    .vs-banner-main {
+      margin: 0;
+      font-size: 42px;
+      line-height: 0.95;
+      color: #ffcf5b;
+      text-transform: uppercase;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 0 rgba(73, 47, 16, 0.45);
+    }
+
+    .vs-banner-sub {
+      margin: 6px 0 0;
+      font-size: 13px;
+      color: #c2deeb;
+      font-weight: 700;
+    }
+
+    .showcase-card {
+      border: 1px solid rgba(208, 234, 244, 0.18);
+      border-radius: 14px;
+      background: rgba(6, 18, 24, 0.88);
+      padding: 14px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .showcase-top {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+    }
+
+    .showcase-top img {
+      width: 100%;
+      height: 240px;
+      border-radius: 12px;
+      object-fit: contain;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(10, 27, 35, 0.8);
+      padding: 8px;
+    }
+
+    .showcase-name {
+      margin: 0;
+      font-size: 44px;
+      font-weight: 800;
+      line-height: 0.95;
+      color: #ffffff;
+      overflow-wrap: anywhere;
+      width: 100%;
+      text-align: center;
+    }
+
+    .showcase-sub {
+      margin: 6px 0 0;
+      font-size: 13px;
+      color: #bfd9e8;
+      text-align: center;
+    }
+
+    .hero-picker {
+      margin-top: 8px;
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid rgba(206, 232, 243, 0.28);
+      background: rgba(9, 23, 30, 0.78);
+      color: #eff8fc;
+      padding: 6px 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .showcase-top > div {
+      width: 100%;
+    }
+
+    .module-sep {
+      border-top: 1px solid rgba(208, 234, 244, 0.16);
+      padding-top: 8px;
+      margin-top: 4px;
+    }
+
+    .showcase-big {
+      margin: 6px 0 0;
+      font-size: 30px;
+      line-height: 1;
+      color: #07b8ff;
+      font-weight: 900;
+    }
+
+    .showcase-label {
+      margin: 0;
+      font-size: 12px;
+      color: #c9e5f2;
+    }
+
+    .showcase-divider {
+      border-top: 1px solid rgba(208, 234, 244, 0.2);
+      margin-top: 6px;
+      padding-top: 10px;
+    }
+
+    .showcase-stat-title {
+      margin: 0;
+      font-size: 12px;
+      color: #bfd9e8;
+    }
+
+    .showcase-stat {
+      margin: 2px 0;
+      font-size: 22px;
+      font-weight: 900;
+      color: #ffffff;
+    }
+
+    .showcase-center {
+      border: 1px solid rgba(208, 234, 244, 0.18);
+      border-radius: 14px;
+      background: rgba(7, 22, 29, 0.86);
+      padding: 14px;
+      display: grid;
+      align-content: center;
+      gap: 8px;
+      text-align: center;
+    }
+
+    .showcase-center h3 {
+      margin: 0;
+      font-size: 14px;
+      color: #d6eaf5;
+    }
+
+    .vs-title {
+      margin: 0 0 6px;
+      font-size: 34px;
+      line-height: 0.95;
+      color: #ffcf5b;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 0 rgba(73, 47, 16, 0.45);
+    }
+
+    .vs-sub {
+      margin: 0 0 10px;
+      font-size: 12px;
+      color: #c2deeb;
+    }
+
+    .showcase-diff {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.05;
+      font-weight: 900;
+    }
+
+    .showcase-diff.neg { color: #ff5f69; }
+    .showcase-diff.pos { color: #4fe68f; }
+    .showcase-diff.tie { color: #d9eaf3; }
+
+    .showcase-strong {
+      margin: 2px 0 0;
+      font-size: 13px;
+      color: #bedded;
+      font-weight: 700;
+    }
+
+    .showcase-center hr {
+      border: 0;
+      border-top: 1px solid rgba(208, 234, 244, 0.2);
+      margin: 8px 0;
+    }
+
+    details.metrics-details {
+      border: 1px solid rgba(208, 234, 244, 0.2);
+      border-radius: 12px;
+      background: rgba(15, 33, 42, 0.45);
+      padding: 10px;
+    }
+
+    details.metrics-details > summary {
+      cursor: pointer;
+      color: #d5e9f3;
+      font-weight: 700;
+      user-select: none;
+      margin-bottom: 8px;
+    }
+
+    .hero-head {
+      display: grid;
+      grid-template-columns: 1fr 120px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .hero-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(73, 119, 141, 0.88), rgba(54, 94, 113, 0.92));
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .hero-card img {
+      width: 132px;
+      height: 132px;
+      object-fit: contain;
+      border-radius: 10px;
+      background: rgba(21, 44, 56, 0.56);
+      border: 1px solid rgba(211, 235, 243, 0.26);
+      padding: 4px;
+      flex: 0 0 auto;
+    }
+
+    .hero-name {
+      margin: 0;
+      font-size: 34px;
+      line-height: 1;
+      color: #fff;
+      text-shadow: 0 1px 0 rgba(19, 43, 56, 0.44);
+    }
+
+    .hero-meta {
+      margin: 5px 0 0;
+      color: #e7f5fb;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .vs {
+      text-align: center;
+      font-size: 34px;
+      font-weight: 900;
+      color: var(--gold);
+      text-shadow: 0 2px 0 rgba(60, 41, 19, 0.4);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 14px;
+      border: 1px solid rgba(208, 234, 244, 0.2);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 640px;
+      background: rgba(15, 33, 42, 0.62);
+    }
+
+    th,
+    td {
+      padding: 11px 12px;
+      border-bottom: 1px solid rgba(207, 233, 242, 0.14);
+      text-align: center;
+      font-size: 14px;
+    }
+
+    th {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.45px;
+      color: #d7ecf4;
+      background: rgba(26, 52, 66, 0.7);
+    }
+
+    td:first-child,
+    th:first-child {
+      text-align: left;
+    }
+
+    .winner-left {
+      color: var(--ok);
+      font-weight: 800;
+    }
+
+    .winner-right {
+      color: var(--warn);
+      font-weight: 800;
+    }
+
+    .tie {
+      color: #dceef5;
+      font-weight: 700;
+    }
+
+    .summary {
+      border: 1px solid rgba(208, 234, 244, 0.22);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: rgba(15, 33, 42, 0.58);
+      display: grid;
+      gap: 8px;
+    }
+
+    .summary h2 {
+      margin: 0;
+      font-size: 16px;
+      color: #f5fbff;
+    }
+
+    .summary ul {
+      margin: 0;
+      padding-left: 18px;
+      color: #d2e6ef;
+    }
+
+    .summary li {
+      margin: 4px 0;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 860px) {
+      .topbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .hero-head {
+        grid-template-columns: 1fr;
+      }
+
+      .vs {
+        font-size: 28px;
+      }
+
+      .hero-card img {
+        width: 96px;
+        height: 96px;
+      }
+
+      .hero-name {
+        font-size: 28px;
+      }
+
+      .hero-meta {
+        font-size: 14px;
+      }
+
+      .showcase {
+        grid-template-columns: 1fr;
+      }
+
+      .showcase-top img {
+        height: 180px;
+      }
+
+      .showcase-name {
+        font-size: 34px;
+      }
+
+      .vs-banner-main {
+        font-size: 28px;
+      }
+
+      .vs-title {
+        font-size: 28px;
+      }
+
+      .showcase-big {
+        font-size: 26px;
+      }
+
+      .showcase-diff {
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div class="left-head">
+        <a class="back" href="/heroes">&larr;</a>
+        <div class="title">
+          <h1>Hero Comparison</h1>
+          <p>Side-by-side stat match with key difference summary</p>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <a class="sim-link" href="/coordinated-attack">Coordinated Attack</a>
+        <a class="sim-link" href="/simulator">Combat Simulator</a>
+      </div>
+    </header>
+
+    {% if message %}
+      <section class="notice">{{ message }}</section>
+    {% endif %}
+
+    {% if comparison and left_hero and right_hero %}
+      <section class="compare-panel">
+        <form class="progression-form" method="get" action="/heroes/compare">
+          <input type="hidden" id="left_star_points" name="left_star_points" value="{{ levels.left_star_points }}" />
+          <input type="hidden" id="right_star_points" name="right_star_points" value="{{ levels.right_star_points }}" />
+
+          <section class="vs-banner">
+            <p class="vs-banner-main">{{ left_hero.name }} VS {{ right_hero.name }}</p>
+            <p class="vs-banner-sub">Head-to-head comparison</p>
+          </section>
+
+          <section class="showcase">
+          <article class="showcase-card">
+            <div class="showcase-top">
+              {% if left_hero.card_image %}
+                <img src="{{ left_hero.card_image }}" alt="{{ left_hero.name }}" />
+              {% endif %}
+              <div>
+                <h2 class="showcase-name">{{ left_hero.name }}</h2>
+                <p class="showcase-sub">{{ comparison.left_profile.star_tier }}-Star · Widget Lv {{ comparison.left_profile.widget_level }}</p>
+                <select class="hero-picker" name="left">
+                  {% for group in left_option_groups %}
+                    <option value="" disabled>--- {{ group.label }} ---</option>
+                    {% for option in group.options %}
+                      <option value="{{ option.slug }}" {% if option.slug == left_hero.slug %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <div class="module-sep progression-card">
+              <h3>Progression</h3>
+              <div class="progression-row">
+                <label>Star progression (5 stars x 6 sub-levels)</label>
+                <p class="star-level-text" id="left_star_label">-</p>
+                <div class="star-control js-star-control" data-hidden-input="left_star_points" data-label-id="left_star_label" data-initial-points="{{ levels.left_star_points }}">
+                  {% for star_idx in [0,1,2,3,4] %}
+                    <div class="star-unit" data-star-index="{{ star_idx }}">
+                      <svg class="star-svg" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+                        {% for tip in [1,2,3,4,5,6] %}
+                          <polygon class="star-seg" data-seg="{{ tip }}" points="" />
+                        {% endfor %}
+                      </svg>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="progression-row">
+                <label for="left_widget">Widget level</label>
+                <div class="widget-line">
+                  <input id="left_widget" name="left_widget" type="range" min="0" max="10" step="1" value="{{ levels.left_widget }}" />
+                  <div class="widget-meta">
+                    <span>Lv 0</span>
+                    <span class="widget-value" id="left_widget_value">Widget {{ levels.left_widget }}</span>
+                    <span>Lv 10</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p class="showcase-big">{{ '%+.2f'|format(comparison.showcase.left_attack_defense_bonus_pct)|replace('.', ',') }}%</p>
+            <p class="showcase-label">Attack/Defense: {{ '%+.2f'|format(comparison.showcase.left_attack_defense_bonus_pct)|replace('.', ',') }}%</p>
+            <div class="showcase-divider">
+              <p class="showcase-stat-title">Widget (Lv {{ comparison.left_profile.widget_level }})</p>
+              <p class="showcase-stat">Health/Lethality: {{ '%+.2f'|format(comparison.showcase.left_weapon_health_bonus_pct)|replace('.', ',') }}% / {{ '%+.2f'|format(comparison.showcase.left_weapon_lethality_bonus_pct)|replace('.', ',') }}%</p>
+            </div>
+          </article>
+
+          <article class="showcase-center">
+            {% set ad_diff = (comparison.showcase.diff_attack_pct + comparison.showcase.diff_defense_pct) / 2 %}
+            {% set wl_diff = (comparison.showcase.diff_weapon_health_pct + comparison.showcase.diff_weapon_lethality_pct) / 2 %}
+            {% set ad_cls = 'pos' if ad_diff > 0 else ('neg' if ad_diff < 0 else 'tie') %}
+            {% set wl_cls = 'pos' if wl_diff > 0 else ('neg' if wl_diff < 0 else 'tie') %}
+            <h3>Attack/Defense Difference</h3>
+            <p class="showcase-diff {{ ad_cls }}">{{ '%+.2f'|format(ad_diff)|replace('.', ',') }}%</p>
+            <p class="showcase-strong">{{ comparison.showcase.stronger_name }} is stronger</p>
+
+            <hr />
+
+            <h3>Widget Health/Lethality Difference</h3>
+            <p class="showcase-diff {{ wl_cls }}">{{ '%+.2f'|format(wl_diff)|replace('.', ',') }}%</p>
+          </article>
+
+          <article class="showcase-card">
+            <div class="showcase-top">
+              {% if right_hero.card_image %}
+                <img src="{{ right_hero.card_image }}" alt="{{ right_hero.name }}" />
+              {% endif %}
+              <div>
+                <h2 class="showcase-name">{{ right_hero.name }}</h2>
+                <p class="showcase-sub">{{ comparison.right_profile.star_tier }}-Star · Widget Lv {{ comparison.right_profile.widget_level }}</p>
+                <select class="hero-picker" name="right">
+                  {% for group in right_option_groups %}
+                    <option value="" disabled>--- {{ group.label }} ---</option>
+                    {% for option in group.options %}
+                      <option value="{{ option.slug }}" {% if option.slug == right_hero.slug %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <div class="module-sep progression-card">
+              <h3>Progression</h3>
+              <div class="progression-row">
+                <label>Star progression (5 stars x 6 sub-levels)</label>
+                <p class="star-level-text" id="right_star_label">-</p>
+                <div class="star-control js-star-control" data-hidden-input="right_star_points" data-label-id="right_star_label" data-initial-points="{{ levels.right_star_points }}">
+                  {% for star_idx in [0,1,2,3,4] %}
+                    <div class="star-unit" data-star-index="{{ star_idx }}">
+                      <svg class="star-svg" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+                        {% for tip in [1,2,3,4,5,6] %}
+                          <polygon class="star-seg" data-seg="{{ tip }}" points="" />
+                        {% endfor %}
+                      </svg>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="progression-row">
+                <label for="right_widget">Widget level</label>
+                <div class="widget-line">
+                  <input id="right_widget" name="right_widget" type="range" min="0" max="10" step="1" value="{{ levels.right_widget }}" />
+                  <div class="widget-meta">
+                    <span>Lv 0</span>
+                    <span class="widget-value" id="right_widget_value">Widget {{ levels.right_widget }}</span>
+                    <span>Lv 10</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p class="showcase-big">{{ '%+.2f'|format(comparison.showcase.right_attack_defense_bonus_pct)|replace('.', ',') }}%</p>
+            <p class="showcase-label">Attack/Defense: {{ '%+.2f'|format(comparison.showcase.right_attack_defense_bonus_pct)|replace('.', ',') }}%</p>
+            <div class="showcase-divider">
+              <p class="showcase-stat-title">Widget (Lv {{ comparison.right_profile.widget_level }})</p>
+              <p class="showcase-stat">Health/Lethality: {{ '%+.2f'|format(comparison.showcase.right_weapon_health_bonus_pct)|replace('.', ',') }}% / {{ '%+.2f'|format(comparison.showcase.right_weapon_lethality_bonus_pct)|replace('.', ',') }}%</p>
+            </div>
+          </article>
+          </section>
+        </form>
+
+        <details class="metrics-details">
+          <summary>Detailed Metrics Table</summary>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  <th>{{ left_hero.name }}</th>
+                  <th>{{ right_hero.name }}</th>
+                  <th>Difference</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in comparison.rows %}
+                  {% set left_class = 'winner-left' if row.winner == 'left' else ('tie' if row.winner == 'tie' else '') %}
+                  {% set right_class = 'winner-right' if row.winner == 'right' else ('tie' if row.winner == 'tie' else '') %}
+                  <tr>
+                    <td>{{ row.label }}</td>
+                    <td class="{{ left_class }}">
+                      {% if row.decimals == 0 %}{{ row.left|int }}{% else %}{{ '%.2f'|format(row.left) }}{% endif %}{{ row.suffix }}
+                    </td>
+                    <td class="{{ right_class }}">
+                      {% if row.decimals == 0 %}{{ row.right|int }}{% else %}{{ '%.2f'|format(row.right) }}{% endif %}{{ row.suffix }}
+                    </td>
+                    <td>
+                      {% if row.decimals == 0 %}{{ row.delta|int }}{% else %}{{ '%.2f'|format(row.delta) }}{% endif %}{{ row.suffix }}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </details>
+
+        <section class="summary">
+          <h2>Most Significant Differences</h2>
+          <ul>
+            {% for line in comparison.summary %}
+              <li>{{ line }}</li>
+            {% endfor %}
+          </ul>
+        </section>
+      </section>
+    {% endif %}
+  </main>
+
+  {% if comparison and left_hero and right_hero %}
+    <script>
+      (function () {
+        function clamp(value, min, max) {
+          return Math.max(min, Math.min(max, value));
+        }
+
+        function polar(cx, cy, radius, angleDeg) {
+          const angleRad = (angleDeg * Math.PI) / 180;
+          return {
+            x: cx + Math.cos(angleRad) * radius,
+            y: cy + Math.sin(angleRad) * radius,
+          };
+        }
+
+        function setupStarGeometry(starEl) {
+          if (starEl.dataset.geomReady === '1') {
+            return;
+          }
+
+          // Order requested: top first, then counter-clockwise.
+          const angles = [-90, -150, 150, 90, 30, -30];
+          for (const segEl of starEl.querySelectorAll('.star-seg')) {
+            const segNum = Number(segEl.dataset.seg || 1);
+            const angle = angles[segNum - 1];
+
+            // Compact shape closer to in-game star petals.
+            const tip = polar(50, 50, 47, angle);
+            const left = polar(50, 50, 31, angle - 20);
+            const center = { x: 50, y: 50 };
+            const right = polar(50, 50, 31, angle + 20);
+
+            segEl.setAttribute('points', `${tip.x},${tip.y} ${left.x},${left.y} ${center.x},${center.y} ${right.x},${right.y}`);
+          }
+
+          starEl.dataset.geomReady = '1';
+        }
+
+        function setStarLabel(labelEl, points) {
+          const safePoints = clamp(points, 1, 30);
+          const starTier = Math.floor((safePoints - 1) / 6) + 1;
+          const subLevel = ((safePoints - 1) % 6) + 1;
+          labelEl.textContent = `${starTier} Star - Level ${subLevel}`;
+        }
+
+        let submitTimer = null;
+
+        function scheduleSubmit() {
+          if (submitTimer !== null) {
+            window.clearTimeout(submitTimer);
+          }
+          submitTimer = window.setTimeout(function () {
+            const form = document.querySelector('.progression-form');
+            if (form) {
+              form.requestSubmit();
+            }
+          }, 180);
+        }
+
+        function renderStarControl(controlEl) {
+          const hiddenId = controlEl.dataset.hiddenInput;
+          const labelId = controlEl.dataset.labelId;
+          const hiddenInput = document.getElementById(hiddenId);
+          const labelEl = document.getElementById(labelId);
+          if (!hiddenInput || !labelEl) {
+            return;
+          }
+
+          let points = clamp(Number(hiddenInput.value || controlEl.dataset.initialPoints || 1), 1, 30);
+          hiddenInput.value = String(points);
+
+          const stars = Array.from(controlEl.querySelectorAll('.star-unit'));
+          for (const starEl of stars) {
+            setupStarGeometry(starEl);
+
+            const starIndex = Number(starEl.dataset.starIndex || 0);
+            const selectedInStar = clamp(points - starIndex * 6, 0, 6);
+
+            for (const segEl of starEl.querySelectorAll('.star-seg')) {
+              const segNum = Number(segEl.dataset.seg || 1);
+              segEl.classList.toggle('active', segNum <= selectedInStar);
+
+              if (segEl.dataset.bound !== '1') {
+                segEl.addEventListener('click', function () {
+                  points = clamp(starIndex * 6 + segNum, 1, 30);
+                  hiddenInput.value = String(points);
+                  renderStarControl(controlEl);
+                  scheduleSubmit();
+                });
+                segEl.dataset.bound = '1';
+              }
+            }
+          }
+
+          setStarLabel(labelEl, points);
+        }
+
+        function bindWidgetLabel(inputId, outputId) {
+          const inputEl = document.getElementById(inputId);
+          const outputEl = document.getElementById(outputId);
+          if (!inputEl || !outputEl) {
+            return;
+          }
+
+          const sync = function () {
+            outputEl.textContent = `Widget ${inputEl.value}`;
+            scheduleSubmit();
+          };
+          inputEl.addEventListener('input', sync);
+
+          // Initialize text without submitting on page load.
+          outputEl.textContent = `Widget ${inputEl.value}`;
+        }
+
+        for (const controlEl of document.querySelectorAll('.js-star-control')) {
+          renderStarControl(controlEl);
+        }
+
+        bindWidgetLabel('left_widget', 'left_widget_value');
+        bindWidgetLabel('right_widget', 'right_widget_value');
+
+        for (const picker of document.querySelectorAll('.hero-picker')) {
+          picker.addEventListener('change', scheduleSubmit);
+        }
+      })();
+    </script>
+  {% endif %}
+</body>
+</html>

@@ -1,0 +1,17 @@
+[Unit]
+Description=Kingshot Combat Simulator Web
+After=network.target
+
+[Service]
+Type=simple
+User=knycat
+WorkingDirectory=/home/knycat/kingshot-bot
+EnvironmentFile=/home/knycat/kingshot-bot/.env
+ExecStart=/home/knycat/kingshot-bot/venv/bin/python /home/knycat/kingshot-bot/run_simulator_web.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

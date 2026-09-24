@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Combat Simulator | Kingshot</title>
+  <link rel="icon" type="image/webp" href="/static/favicon.webp" />
+  <link rel="stylesheet" href="/static/ui/app-theme.css" />
+  <style>
+    :root {
+      --bg: #0d1117;
+      --text: #e8eef8;
+      --accent: #61dafb;
+      --accent-strong: #4da4cb;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      color: var(--text);
+      background: radial-gradient(1000px 500px at 30% -10%, #233047 0%, transparent 60%), linear-gradient(180deg, #0b1016, var(--bg));
+    }
+
+    .app-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 24px;
+      margin: 20px auto;
+      padding: 16px 24px;
+      border: 2px solid var(--accent-strong);
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(13, 17, 23, 0.95) 0%, rgba(20, 32, 45, 0.98) 100%);
+      box-shadow: 0 0 40px rgba(97, 218, 251, 0.15);
+      width: min(1360px, 92vw);
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .app-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+      flex: 0 1 auto;
+    }
+
+    .app-brand-logo {
+      width: 40px;
+      height: 40px;
+      flex: 0 0 auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 12px rgba(97, 218, 251, 0.4));
+    }
+
+    .app-brand div {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .app-brand h1 {
+      margin: 0;
+      color: #fff6d8;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .app-brand p {
+      margin: 0;
+      color: #96a7be;
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .app-back {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 0;
+      background: linear-gradient(135deg, #61dafb, #4da4cb);
+      color: #0a1a26;
+      font-size: 20px;
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      box-shadow: 0 0 20px rgba(97, 218, 251, 0.3);
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+
+    .construction-banner {
+      width: min(1360px, 92vw);
+      margin: 0 auto 24px;
+      padding: 40px 32px;
+      border: 2px solid #7f5af0;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(127, 90, 240, 0.15) 0%, rgba(97, 218, 251, 0.08) 100%);
+      box-shadow: inset 0 0 30px rgba(127, 90, 240, 0.2);
+      text-align: center;
+      display: {{ 'none' if show_simulator_progress else 'block' }};
+    }
+
+    .construction-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .construction-banner h2 {
+      margin: 0 0 8px;
+      font-size: 32px;
+      color: #fff6d8;
+      letter-spacing: -0.5px;
+    }
+
+    .construction-banner p {
+      margin: 0;
+      color: #c6d9eb;
+      font-size: 16px;
+      line-height: 1.6;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body class="app-theme">
+  <header class="app-topbar">
+    <div class="app-brand">
+      <a class="app-back" href="/">&larr;</a>
+      <img src="/static/favicon.webp" alt="Kingshot" class="app-brand-logo" />
+      <div>
+        <h1>Combat Simulator</h1>
+        <p>Advanced battle composition optimizer</p>
+      </div>
+    </div>
+    <div class="app-topbar-actions">
+      <a class="app-link" href="/heroes">Heroes</a>
+      <a class="app-link" href="/coordinated-attack">Coordinated Attack</a>
+    </div>
+  </header>
+
+  <section class="construction-banner">
+    <div class="construction-icon">🔨</div>
+    <h2>Coming Soon</h2>
+    <p>This feature is currently under development and will be available soon. We are working hard to bring you an advanced combat simulator with real-time battle optimization and detailed analytics.</p>
+  </section>
+</body>
+</html>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --bg-soft: #151b24;
+      --card: #1b2430;
+      --card-2: #111826;
+      --line: #304055;
+      --text: #e8eef8;
+      --muted: #96a7be;
+      --accent: #61dafb;
+      --accent-strong: #4da4cb;
+      --accent-2: #7f5af0;
+      --danger: #ff8a8a;
+      --ok: #9be8ac;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      color: var(--text);
+      background: radial-gradient(1000px 500px at 30% -10%, #233047 0%, transparent 60%), linear-gradient(180deg, #0b1016, var(--bg));
+    }
+
+    .app-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin: 20px auto 24px;
+      padding: 16px 24px;
+      border: 2px solid var(--accent-strong);
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(13, 17, 23, 0.95) 0%, rgba(20, 32, 45, 0.98) 100%);
+      box-shadow: 0 0 40px rgba(97, 218, 251, 0.15);
+      width: min(1360px, 92vw);
+      position: relative;
+    }
+
+    .app-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+      flex: 0 1 auto;
+    }
+
+    .app-brand-logo {
+      width: 40px;
+      height: 40px;
+      flex: 0 0 auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 12px rgba(97, 218, 251, 0.4));
+    }
+
+    .app-brand div {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .app-brand h1 {
+      margin: 0;
+      color: #fff6d8;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .app-brand p {
+      margin: 0;
+      color: #96a7be;
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .app-back {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 0;
+      background: linear-gradient(135deg, #61dafb, #4da4cb);
+      color: #0a1a26;
+      font-size: 20px;
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      box-shadow: 0 0 20px rgba(97, 218, 251, 0.3);
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+
+    .construction-banner {
+      width: min(1360px, 92vw);
+      margin: 0 auto 24px;
+      padding: 40px 32px;
+      border: 2px solid #7f5af0;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(127, 90, 240, 0.15) 0%, rgba(97, 218, 251, 0.08) 100%);
+      box-shadow: inset 0 0 30px rgba(127, 90, 240, 0.2);
+      text-align: center;
+    }
+
+    .construction-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .construction-banner h2 {
+      margin: 0 0 8px;
+      font-size: 32px;
+      color: #fff6d8;
+      letter-spacing: -0.5px;
+    }
+
+    .construction-banner p {
+      margin: 0;
+      color: #c6d9eb;
+      font-size: 16px;
+      line-height: 1.6;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .wrap {
+      max-width: 1240px;
+      margin: 20px auto 40px;
+      padding: 0 16px;
+      display: {{ 'grid' if show_simulator_progress else 'none' }};
+      gap: 12px;
+    }
+            <td><input id="p_cav_def" type="number" value="10.0"></td>
+            <td><input id="p_cav_let" type="number" value="10.0"></td>
+            <td><input id="p_cav_hp" type="number" value="10.0"></td>
+          </tr>
+          <tr>
+            <td>Archer</td>
+            <td><input id="p_arc_att" type="number" value="10.0"></td>
+            <td><input id="p_arc_def" type="number" value="10.0"></td>
+            <td><input id="p_arc_let" type="number" value="10.0"></td>
+            <td><input id="p_arc_hp" type="number" value="10.0"></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="section-title">Heroes</div>
+      <label>Available Heroes (Name:Level, one per line)</label>
+      <textarea id="heroes"></textarea>
+    </section>
+
+    <section class="card hidden" id="tab_defender">
+      <h2>Defender Setup</h2>
+      <p class="meta">Define enemy composition and boosts. INF + CAV + ARC must total 100.</p>
+
+      <div class="section-title">Global</div>
+      <div class="grid">
+        <div><label>Total troops</label><input id="e_total" type="number" value="430000"></div>
+        <div><label>Troop tier</label><select id="e_level"></select></div>
+        <div><label>Enemy Damage Boost (%)</label><input id="e_dmg" type="number" value="10"></div>
+        <div><label>Enemy Defense Boost (%)</label><input id="e_def" type="number" value="10"></div>
+        <div><label>Enemy Health Boost (%)</label><input id="e_hp" type="number" value="10"></div>
+      </div>
+
+      <div class="section-title">Troops</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>%</th>
+            <th>Approx Qtty</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Infantry</td>
+            <td><input id="e_inf" type="number" value="40"></td>
+            <td id="q_inf">172000</td>
+          </tr>
+          <tr>
+            <td>Cavalry</td>
+            <td><input id="e_cav" type="number" value="30"></td>
+            <td id="q_cav">129000</td>
+          </tr>
+          <tr>
+            <td>Archer</td>
+            <td><input id="e_arc" type="number" value="30"></td>
+            <td id="q_arc">129000</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="meta" id="pct_check"></p>
+    </section>
+
+    <section class="card hidden" id="tab_battle">
+      <h2>Battle</h2>
+      <p class="meta">Run the optimization to get the top 3 winning compositions.</p>
+
+      <div class="section-title">Simulation Params</div>
+      <div class="grid">
+        <div><label>Composition Step (%)</label><input id="p_comp_step" type="number" value="25"></div>
+        <div><label>Boost Step (%)</label><input id="p_boost_step" type="number" value="25"></div>
+        <div><label>Max Turns</label><input id="max_turns" type="number" value="90"></div>
+      </div>
+
+      <div style="margin-top:12px;" class="inline-actions">
+        <button class="main-cta" id="runBtn" type="button">Run Battle Optimization</button>
+        <span id="status" class="meta"></span>
+      </div>
+
+      <div class="section-title">Results</div>
+      <div id="results"></div>
+    </section>
+
+    <section class="card">
+      <h2>Notes</h2>
+      <p class="meta">This version replicates the Attacker / Defender / Battle UI flow. In the next iteration, we will wire per-type stats (Attack/Defense/Lethality/Health) directly into the engine for 1:1 precision.</p>
+    </section>
+
+    <script>
+      const tierOptions = ["10", "tg2", "tg3", "tg4", "tg5", "t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9", "t10", "t11"];
+
+      function fillTierSelects() {
+        const p = document.getElementById("p_level");
+        const e = document.getElementById("e_level");
+        p.innerHTML = "";
+        e.innerHTML = "";
+        tierOptions.forEach(val => {
+          const op1 = document.createElement("option");
+          op1.value = val;
+          op1.textContent = val.toUpperCase();
+          if (val === "tg3") op1.selected = true;
+          p.appendChild(op1);
+
+          const op2 = document.createElement("option");
+          op2.value = val;
+          op2.textContent = val.toUpperCase();
+          if (val === "tg2") op2.selected = true;
+          e.appendChild(op2);
+        });
+      }
+
+      function parseHeroes(text) {
+        return text.split(/\n+/).map(line => line.trim()).filter(Boolean).map(line => {
+          const parts = line.split(":");
+          return { name: (parts[0] || "").trim(), level: Number((parts[1] || "100").trim()) || 100 };
+        });
+      }
+
+      function buildPayload() {
+        return {
+          max_turns: Number(document.getElementById("max_turns").value || 90),
+          player: {
+            total_troops: Number(document.getElementById("p_total").value || 0),
+            troop_level: document.getElementById("p_level").value,
+            max_damage_boost: Number(document.getElementById("p_max_dmg").value || 0),
+            max_defense_boost: Number(document.getElementById("p_max_def").value || 0),
+            max_health_boost: Number(document.getElementById("p_max_hp").value || 0),
+            composition_step: Number(document.getElementById("p_comp_step").value || 25),
+            boost_step: Number(document.getElementById("p_boost_step").value || 25),
+            available_heroes: parseHeroes(document.getElementById("heroes").value),
+          },
+          enemy: {
+            total_troops: Number(document.getElementById("e_total").value || 0),
+            troop_level: document.getElementById("e_level").value,
+            infantry_pct: Number(document.getElementById("e_inf").value || 0),
+            cavalry_pct: Number(document.getElementById("e_cav").value || 0),
+            archers_pct: Number(document.getElementById("e_arc").value || 0),
+            damage_boost: Number(document.getElementById("e_dmg").value || 0),
+            defense_boost: Number(document.getElementById("e_def").value || 0),
+            health_boost: Number(document.getElementById("e_hp").value || 0),
+          }
+        };
+      }
+
+      function renderResult(data) {
+        const box = document.getElementById("results");
+        box.innerHTML = "";
+
+        if (!data.possible) {
+          box.innerHTML = `<p class="error">${data.message || "No winning composition was found."}</p>`;
+          return;
+        }
+
+        if (data.searched) {
+          const s = data.searched;
+          const meta = document.createElement("p");
+          meta.className = "meta";
+          meta.textContent = `Explored: ${s.compositions} compositions x ${s.hero_sets} hero sets x ${s.boost_candidates} boosts | simulations: ${s.simulations}`;
+          box.appendChild(meta);
+        }
+
+        data.results.forEach((item, idx) => {
+          const el = document.createElement("div");
+          el.className = "result";
+          const heroes = item.heroes.length ? item.heroes.map(h => `${h.name} Lv${h.level}`).join(", ") : "No heroes";
+          el.innerHTML = `
+            <h3>#${idx + 1} Candidate</h3>
+            <p><b>Composition:</b> INF ${item.composition.infantry_pct}% | CAV ${item.composition.cavalry_pct}% | ARC ${item.composition.archers_pct}%</p>
+            <p><b>Heroes:</b> ${heroes}</p>
+            <p><b>Boosts:</b> DMG ${item.boosts.damage_boost}% | DEF ${item.boosts.defense_boost}% | HP ${item.boosts.health_boost}%</p>
+            <p><b>Outcome:</b> ${item.outcome.turns_to_win} turns, ${item.outcome.casualty_pct}% casualties</p>
+            <p class="ok">${item.explanation}</p>
+          `;
+          box.appendChild(el);
+        });
+      }
+
+      function updateQuantities() {
+        const total = Number(document.getElementById("e_total").value || 0);
+        const inf = Number(document.getElementById("e_inf").value || 0);
+        const cav = Number(document.getElementById("e_cav").value || 0);
+        const arc = Number(document.getElementById("e_arc").value || 0);
+        const sum = inf + cav + arc;
+
+        document.getElementById("q_inf").textContent = String(Math.floor(total * inf / 100));
+        document.getElementById("q_cav").textContent = String(Math.floor(total * cav / 100));
+        document.getElementById("q_arc").textContent = String(Math.max(0, total - Math.floor(total * inf / 100) - Math.floor(total * cav / 100)));
+
+        const check = document.getElementById("pct_check");
+        check.textContent = `Composition check: INF+CAV+ARC = ${sum}%`;
+        check.className = sum === 100 ? "meta ok" : "meta error";
+      }
+
+      function setPreset(kind) {
+        const heroes = document.getElementById("heroes");
+        if (kind === "fast") {
+          document.getElementById("p_total").value = 600000;
+          document.getElementById("p_level").value = "tg3";
+          document.getElementById("p_comp_step").value = 25;
+          document.getElementById("p_boost_step").value = 25;
+          document.getElementById("max_turns").value = 90;
+          document.getElementById("e_total").value = 430000;
+          document.getElementById("e_level").value = "tg2";
+          document.getElementById("e_inf").value = 40;
+          document.getElementById("e_cav").value = 30;
+          document.getElementById("e_arc").value = 30;
+          document.getElementById("e_dmg").value = 10;
+          document.getElementById("e_def").value = 10;
+          document.getElementById("e_hp").value = 10;
+          heroes.value = "";
+        } else if (kind === "balanced") {
+          document.getElementById("p_total").value = 650000;
+          document.getElementById("p_level").value = "tg3";
+          document.getElementById("p_comp_step").value = 20;
+          document.getElementById("p_boost_step").value = 20;
+          document.getElementById("max_turns").value = 120;
+          document.getElementById("e_total").value = 520000;
+          document.getElementById("e_level").value = "tg2";
+          document.getElementById("e_inf").value = 45;
+          document.getElementById("e_cav").value = 25;
+          document.getElementById("e_arc").value = 30;
+          document.getElementById("e_dmg").value = 20;
+          document.getElementById("e_def").value = 20;
+          document.getElementById("e_hp").value = 20;
+          heroes.value = "Howard:100\nQuinn:100";
+        } else {
+          document.getElementById("p_total").value = 500000;
+          document.getElementById("p_level").value = "tg2";
+          document.getElementById("p_comp_step").value = 15;
+          document.getElementById("p_boost_step").value = 10;
+          document.getElementById("max_turns").value = 180;
+          document.getElementById("e_total").value = 560000;
+          document.getElementById("e_level").value = "tg3";
+          document.getElementById("e_inf").value = 45;
+          document.getElementById("e_cav").value = 30;
+          document.getElementById("e_arc").value = 25;
+          document.getElementById("e_dmg").value = 30;
+          document.getElementById("e_def").value = 30;
+          document.getElementById("e_hp").value = 30;
+          heroes.value = "Chenko:100\nAmadeus:95\nHoward:90";
+        }
+        updateQuantities();
+      }
+
+      function activateTab(tab) {
+        document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+        document.querySelector(`.tab-btn[data-tab='${tab}']`).classList.add("active");
+
+        document.getElementById("tab_attacker").classList.add("hidden");
+        document.getElementById("tab_defender").classList.add("hidden");
+        document.getElementById("tab_battle").classList.add("hidden");
+        document.getElementById(`tab_${tab}`).classList.remove("hidden");
+      }
+
+      async function runOptimization() {
+        const status = document.getElementById("status");
+        status.textContent = "Running...";
+        try {
+          const resp = await fetch("/api/optimize", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(buildPayload())
+          });
+          const data = await resp.json();
+          renderResult(data);
+          status.textContent = "Done";
+        } catch (e) {
+          status.textContent = "Request failed";
+          document.getElementById("results").innerHTML = `<p class='error'>${e}</p>`;
+        }
+      }
+
+      fillTierSelects();
+      setPreset("fast");
+      updateQuantities();
+      activateTab("attacker");
+
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => activateTab(btn.dataset.tab));
+      });
+
+      ["e_total", "e_inf", "e_cav", "e_arc"].forEach(id => {
+        document.getElementById(id).addEventListener("input", updateQuantities);
+      });
+
+      document.getElementById("runBtn").addEventListener("click", runOptimization);
+      document.getElementById("preset_fast").addEventListener("click", () => setPreset("fast"));
+      document.getElementById("preset_balanced").addEventListener("click", () => setPreset("balanced"));
+      document.getElementById("preset_hard").addEventListener("click", () => setPreset("hard"));
+    </script>
+  </div>
+</body>
+</html>

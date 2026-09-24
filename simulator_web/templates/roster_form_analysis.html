@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ roster_form.title }} · Form analysis</title>
+  <link rel="icon" href="/static/favicon.webp" />
+  <link rel="stylesheet" href="/static/ui/app-theme.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    body { margin:0; background:#081018; color:#edf5ff; }
+    .analysis-shell { width:min(1440px, calc(100% - 32px)); margin:16px auto 48px; }
+    .analysis-header { display:flex; justify-content:space-between; align-items:center; gap:20px; padding:18px 20px; border:1px solid #26394b; background:#101a24; }
+    .analysis-header h1 { margin:0; font-size:24px; letter-spacing:0; }
+    .analysis-header p { margin:5px 0 0; color:#91a8bb; }
+    .analysis-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .analysis-actions a { white-space:nowrap; text-decoration:none; }
+    .metric-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:14px 0; }
+    .metric { padding:16px; border:1px solid #26394b; background:#101a24; border-radius:6px; }
+    .metric span { display:block; color:#91a8bb; font-size:12px; text-transform:uppercase; }
+    .metric strong { display:block; margin-top:5px; font-size:24px; color:#ffd36b; }
+    .chart-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .chart-panel { min-width:0; padding:16px; border:1px solid #26394b; background:#101a24; border-radius:6px; }
+    .chart-panel.wide { grid-column:1 / -1; }
+    .chart-panel h2 { margin:0 0 4px; font-size:17px; }
+    .chart-panel p { margin:0 0 14px; color:#91a8bb; font-size:13px; }
+    .chart-box { position:relative; height:300px; }
+    .chart-panel.wide .chart-box { height:360px; }
+    .data-panel { margin-top:14px; padding:16px; border:1px solid #26394b; background:#101a24; border-radius:6px; }
+    .data-panel h2 { margin:0 0 12px; font-size:18px; }
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; min-width:780px; border-collapse:collapse; }
+    th,td { padding:10px; border-top:1px solid rgba(146,182,216,.18); text-align:left; white-space:nowrap; }
+    th { color:#91a8bb; font-size:11px; text-transform:uppercase; }
+    .empty { padding:50px 20px; text-align:center; color:#91a8bb; }
+    @media(max-width:900px) { .metric-grid,.chart-grid { grid-template-columns:1fr 1fr; } .analysis-header { align-items:flex-start; flex-direction:column; } }
+    @media(max-width:620px) { .analysis-shell { width:min(100% - 20px,1440px); } .metric-grid,.chart-grid { grid-template-columns:1fr; } .chart-panel.wide { grid-column:auto; } }
+  </style>
+</head>
+<body class="app-theme">
+  <main class="analysis-shell">
+    <header class="analysis-header">
+      <div><h1>{{ roster_form.title }}</h1><p>Form analysis · Created {{ (roster_form.created_at or '')[:10] }} · {{ roster_form.status | title }}</p></div>
+      <div class="analysis-actions"><a class="secondary" href="{{ forms_url }}">Back to forms</a><a class="app-button" href="/alliance/roster-form/{{ roster_form.id }}/xlsx" title="Download responses as XLSX">↓ Download XLSX</a></div>
+    </header>
+
+    <section class="metric-grid">
+      <article class="metric"><span>Responses</span><strong>{{ players|length }}</strong></article>
+      <article class="metric"><span>Total power</span><strong>{{ total_power | format_power }}</strong></article>
+      <article class="metric"><span>Average power</span><strong>{{ average_power | format_power }}</strong></article>
+      <article class="metric"><span>Top power</span><strong>{{ (players[0].power if players else 0) | format_power }}</strong></article>
+    </section>
+
+    {% if players %}
+      <section class="chart-grid">
+        <article class="chart-panel wide"><h2>Alliance power curve</h2><p>Players ranked from highest to lowest reported power.</p><div class="chart-box"><canvas id="powerChart"></canvas></div></article>
+        <article class="chart-panel"><h2>City TG depth</h2><p>Distribution of respondents by city level.</p><div class="chart-box"><canvas id="townHallChart"></canvas></div></article>
+        <article class="chart-panel"><h2>VIP distribution</h2><p>Number of respondents at each VIP level.</p><div class="chart-box"><canvas id="vipChart"></canvas></div></article>
+        <article class="chart-panel"><h2>Daily activity</h2><p>Self-reported activity level.</p><div class="chart-box"><canvas id="activityChart"></canvas></div></article>
+        <article class="chart-panel"><h2>{{ category_label or 'KVK attendance' }}</h2><p>{{ category_description or 'Planned participation in the next KVK battle.' }}</p><div class="chart-box"><canvas id="kvkChart"></canvas></div></article>
+      </section>
+    {% else %}<div class="data-panel empty">No responses have been submitted for this form yet.</div>{% endif %}
+
+    <section class="data-panel"><h2>Player responses</h2><div class="table-wrap"><table><thead><tr><th>Rank</th><th>Player</th><th>Game ID</th><th>Power</th><th>City</th><th>VIP</th><th>Activity</th><th>{{ category_label or 'KVK' }}</th><th>Submitted</th></tr></thead><tbody>{% for player in players %}<tr><td>{{ loop.index }}</td><td><strong>{{ player.name }}</strong></td><td>{{ player.game_id }}</td><td>{{ player.power | format_power }}</td><td>{{ player.town_hall }}</td><td>{{ player.vip }}</td><td>{{ player.activity }}</td><td>{{ player.kvk }}</td><td>{{ (player.submitted_at or '')[:19] | replace('T',' ') }}</td></tr>{% endfor %}</tbody></table></div></section>
+  </main>
+  <script>
+    const chartData = {{ chart_data | tojson }};
+    const colors = ['#2f91d0','#f0c36b','#3cb371','#ef6b73','#9b7ad8','#55c2c3','#e58d52','#8fb86b'];
+    Chart.defaults.color = '#b8c8d6'; Chart.defaults.borderColor = 'rgba(145,168,187,.18)'; Chart.defaults.font.family = 'Segoe UI, sans-serif';
+    function categoryChart(id, values, type='bar') {
+      const labels = Object.keys(values); const data = Object.values(values);
+      new Chart(document.getElementById(id), { type, data:{labels,datasets:[{data,backgroundColor:colors.slice(0,labels.length),borderColor:colors.slice(0,labels.length),borderWidth:1}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:type==='doughnut'}},scales:type==='doughnut'?{}:{y:{beginAtZero:true,ticks:{precision:0}}}} });
+    }
+    if (chartData.power.labels.length) {
+      new Chart(document.getElementById('powerChart'), {type:'line',data:{labels:chartData.power.labels,datasets:[{label:'Power',data:chartData.power.values,borderColor:'#2f91d0',backgroundColor:'rgba(47,145,208,.18)',fill:true,tension:.2,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{callback:value => (value/1000000).toFixed(0)+'M'}},x:{ticks:{maxRotation:45,minRotation:0}}}}});
+      categoryChart('townHallChart', chartData.townHall); categoryChart('vipChart', chartData.vip);
+      categoryChart('activityChart', chartData.activity, 'doughnut'); categoryChart('kvkChart', chartData.kvk, 'doughnut');
+    }
+  </script>
+</body>
+</html>

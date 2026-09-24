@@ -24,3 +24,4 @@ wpa_supplicant.conf
 
 # Local backups
 restore_point*.zip
+.backups/

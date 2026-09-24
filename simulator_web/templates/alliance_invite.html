@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Join {{ alliance.name }} | Kingshot.es</title>
+  <meta name="description" content="You have been invited to join {{ alliance.name }} on Kingshot.es." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Kingshot.es" />
+  <meta property="og:title" content="Join {{ alliance.name }} on Kingshot.es" />
+  <meta property="og:description" content="Your alliance administrators invited you to register your player profile and join {{ alliance.name }}." />
+  <meta property="og:image" content="{{ invite_image_url }}" />
+  <meta property="og:image:secure_url" content="{{ invite_image_url }}" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1731" />
+  <meta property="og:image:height" content="909" />
+  <meta property="og:url" content="{{ invite_url }}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Join {{ alliance.name }} on Kingshot.es" />
+  <meta name="twitter:description" content="Your alliance administrators invited you to join {{ alliance.name }}." />
+  <meta name="twitter:image" content="{{ invite_image_url }}" />
+  <link rel="icon" type="image/webp" href="/static/favicon.webp" />
+  <link rel="stylesheet" href="/static/ui/app-theme.css" />
+  <style>
+    body { margin:0; min-height:100vh; display:grid; place-items:center; padding:24px; box-sizing:border-box; background:#09111a; color:#edf5ff; font-family:Arial,sans-serif; }
+    main { width:min(920px,100%); }
+    .invite-image { display:block; width:100%; height:auto; border:1px solid rgba(242,199,106,.45); border-radius:8px; }
+    .invite-actions { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 0 0; }
+    h1 { margin:0; font-size:clamp(22px,4vw,34px); }
+    p { margin:6px 0 0; color:#acbfd4; }
+    .join-button { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:0 20px; border-radius:8px; background:#f2c76a; color:#09161d; font-weight:800; text-decoration:none; white-space:nowrap; }
+    @media (max-width:640px) { .invite-actions { align-items:stretch; flex-direction:column; } .join-button { width:100%; box-sizing:border-box; } }
+  </style>
+</head>
+<body>
+  <main>
+    <img class="invite-image" src="{{ invite_image_url }}" alt="Invitation to join Kingshot.es" />
+    <div class="invite-actions">
+      <div>
+        <h1>Join {{ alliance.name }}</h1>
+        <p>Continue with Discord to register your player profile.</p>
+      </div>
+      <a class="join-button" href="{{ continue_url }}">Join alliance</a>
+    </div>
+  </main>
+</body>
+</html>

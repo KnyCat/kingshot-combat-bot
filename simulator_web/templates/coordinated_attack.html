@@ -1,0 +1,1724 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Coordinated Attack | Kingshot</title>
+  <link rel="icon" type="image/webp" href="/static/favicon.webp" />
+  <link rel="stylesheet" href="/static/ui/app-theme.css" />
+  <style>
+    .coordinated-shell {
+      width: min(1240px, 94vw);
+      margin: 0 auto;
+      padding: 18px 0 42px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .grid-main {
+      grid-template-columns: 1.2fr 0.8fr;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(180deg, rgba(27, 36, 48, 0.98), rgba(17, 24, 38, 0.98));
+      box-shadow: var(--shadow-md);
+      padding: 18px;
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+      color: #fff6d8;
+    }
+
+    .panel p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+      width: 100%;
+    }
+
+    .field label {
+      font-size: 12px;
+      color: #9fc6ea;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      height: 42px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line-strong);
+      background: rgba(13, 17, 23, 0.92);
+      color: #e8eef8;
+      padding: 9px 12px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    .field textarea {
+      min-height: 84px;
+      resize: vertical;
+      line-height: 1.5;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+    }
+
+    .field textarea.output {
+      min-height: 150px;
+      height: auto;
+      overflow: hidden;
+      font-family: Consolas, "Courier New", monospace;
+    }
+
+    .time-input-group {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .time-input-group input {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      text-align: center;
+      padding: 9px 8px;
+      box-sizing: border-box;
+    }
+
+    .time-input-separator {
+      color: #d6e9ff;
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .march-time-group {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .march-time-group input {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      text-align: center;
+      padding: 6px 8px;
+      box-sizing: border-box;
+    }
+
+    .col-12 { grid-column: span 12; }
+    .col-9 { grid-column: span 9; }
+    .col-8 { grid-column: span 8; }
+    .col-6 { grid-column: span 6; }
+    .col-4 { grid-column: span 4; }
+    .col-3 { grid-column: span 3; }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+      align-items: center;
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .mobile-collapse-toggle {
+      display: none;
+      width: 100%;
+    }
+
+    .mobile-collapse-content {
+      display: block;
+    }
+
+    .btn {
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-sm);
+      background: linear-gradient(180deg, rgba(56, 80, 109, 0.98), rgba(39, 57, 80, 0.98));
+      color: #d6e9ff;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      filter: brightness(1.12);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(180deg, #ffd36b, #f0b94d);
+      color: #182335;
+      border-color: #e3ad45;
+    }
+
+    .btn-copy {
+      background: linear-gradient(180deg, #9bf2ba, #63ce8c);
+      color: #122318;
+      border-color: #59bb80;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #88a5c2;
+      margin-top: 4px;
+      overflow-wrap: anywhere;
+    }
+
+    .hint-credit {
+      display: block;
+      margin-top: 6px;
+      font-size: 11px;
+      color: #7595b3;
+    }
+
+    .hint-credit a {
+      color: #9ed9ff;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .hint-credit a:hover {
+      text-decoration: underline;
+    }
+
+    .split-message-card {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: rgba(10, 16, 24, 0.88);
+      padding: 10px;
+    }
+
+    .split-message-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .split-message-title {
+      margin: 0;
+      font-size: 12px;
+      letter-spacing: 0.4px;
+      color: #9fc6ea;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .split-message-card textarea.output {
+      display: block;
+      width: 100%;
+      min-height: 120px;
+      resize: vertical;
+      overflow: auto;
+      box-sizing: border-box;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line-strong);
+      background: rgba(13, 17, 23, 0.92);
+      color: #e8eef8;
+      padding: 9px 12px;
+      font-size: 14px;
+      line-height: 1.5;
+      font-family: Consolas, "Courier New", monospace;
+    }
+
+    .status {
+      min-height: 18px;
+      margin-top: 10px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .status.error { color: #ff9c9c; }
+    .status.ok { color: #9be8ac; }
+
+    .players-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      border: 1px solid rgba(90, 120, 148, 0.35);
+      border-radius: 12px;
+      overflow: hidden;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    .players-table th,
+    .players-table td {
+      padding: 10px;
+      border-bottom: 1px solid rgba(90, 120, 148, 0.28);
+      text-align: left;
+      font-size: 13px;
+      color: #dbe9f7;
+    }
+
+    .players-table th {
+      background: rgba(42, 56, 74, 0.8);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.4px;
+    }
+
+    .players-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .players-table input {
+      width: 100%;
+      max-width: 100%;
+      height: 36px;
+      border-radius: 9px;
+      border: 1px solid rgba(92, 126, 161, 0.7);
+      background: rgba(12, 17, 23, 0.88);
+      color: #e6f0fb;
+      padding: 6px 10px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    .ratio-group {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .ratio-group .field input {
+      text-align: center;
+      font-weight: 800;
+    }
+
+    .ratio-total {
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #9be8ac;
+    }
+
+    .ratio-total.error {
+      color: #ff9c9c;
+    }
+
+    .small {
+      font-size: 12px;
+      color: #8eb0cd;
+    }
+
+    .visual-card {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 18px;
+      padding: 10px;
+    }
+
+    .visual-frame {
+      border: 1px solid rgba(132, 171, 204, 0.32);
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(10, 14, 20, 0.82);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    }
+
+    .visual-frame img {
+      display: block;
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+      object-position: center;
+    }
+
+    @media (max-width: 980px) {
+      .grid-main {
+        grid-template-columns: 1fr;
+      }
+
+      .grid-main > * {
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .row {
+        grid-template-columns: 1fr;
+      }
+
+      .col-12,
+      .col-9,
+      .col-8,
+      .col-6,
+      .col-4,
+      .col-3 {
+        grid-column: span 1;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .coordinated-shell {
+        width: 100%;
+        max-width: 100%;
+        padding-left: 10px;
+        padding-right: 10px;
+        overflow-x: hidden;
+      }
+
+      .visual-card {
+        display: none;
+      }
+
+      .panel {
+        padding: 14px;
+      }
+
+      .app-topbar {
+        padding: 12px;
+        gap: 10px;
+      }
+
+      .app-topbar-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .app-topbar-actions .app-link {
+        flex: 1 1 auto;
+      }
+
+      .toolbar {
+        gap: 8px;
+      }
+
+      .toolbar .btn {
+        flex: 1 1 100%;
+        max-width: 100%;
+      }
+
+      .mobile-collapse-toggle {
+        display: block;
+        margin-top: 12px;
+      }
+
+      .mobile-collapse-content {
+        display: none;
+      }
+
+      .mobile-collapse.open .mobile-collapse-content {
+        display: block;
+      }
+
+      .players-table {
+        display: block;
+        width: 100%;
+        overflow: visible;
+        border: 0;
+      }
+
+      .players-table thead {
+        display: none;
+      }
+
+      .players-table tbody,
+      .players-table tr,
+      .players-table td {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .players-table tr {
+        border: 1px solid rgba(90, 120, 148, 0.28);
+        border-radius: 10px;
+        padding: 10px;
+        margin-bottom: 10px;
+        background: rgba(18, 27, 38, 0.72);
+      }
+
+      .players-table td {
+        border: 0;
+        padding: 6px 0;
+      }
+
+      .players-table td::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 11px;
+        font-weight: 800;
+        color: #9fc6ea;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-bottom: 5px;
+      }
+
+      .players-table input,
+      .players-table .btn {
+        width: 100%;
+      }
+
+      .players-table .order-label {
+        font-weight: 800;
+      }
+
+      .players-table .order-label::before {
+        margin-bottom: 2px;
+      }
+
+      .ratio-group {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body class="app-theme">
+  <div class="coordinated-shell">
+    <header class="app-topbar">
+      <div class="app-brand">
+        <a class="app-back" href="/" aria-label="Back to home">&larr;</a>
+        <div>
+          <h1>Coordinated Attack</h1>
+          <p>Build ready-to-copy rally messages in UTC</p>
+        </div>
+      </div>
+      <div class="app-topbar-actions">
+        <a class="app-link" href="/heroes">Heroes</a>
+        <a class="app-link" href="/simulator">Simulator</a>
+      </div>
+    </header>
+
+    <section class="grid grid-main">
+      <article class="panel">
+        <h2>Setup</h2>
+        <p>Enter players from strongest to weakest power. The calculator uses this order to build the final timing plan.</p>
+
+        <div class="row">
+          <div class="field col-3">
+            <label for="target">Target</label>
+            <select id="target">
+              <option value="NORTH TOWER">North Tower</option>
+              <option value="SOUTH TOWER">South Tower</option>
+              <option value="EAST TOWER">East Tower</option>
+              <option value="WEST TOWER">West Tower</option>
+              <option value="CENTER">Center</option>
+              <option value="OUTPOSTS">Outposts</option>
+              <option value="OBJECTIVE">Objective</option>
+            </select>
+          </div>
+          <div class="field col-3">
+            <label for="quickImpactOffset">Quick impact time</label>
+            <select id="quickImpactOffset">
+              <option value="" selected>Select</option>
+              <option value="2">2 min</option>
+              <option value="3">3 min</option>
+              <option value="5">5 min</option>
+            </select>
+            <span class="hint">Auto-fills Target time using current UTC + selected minutes + rally time.</span>
+          </div>
+          <div class="field col-3">
+            <label for="coordinatedHourUtc">Target time (UTC)</label>
+            <div class="time-input-group">
+              <input id="coordinatedHourUtc" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="HH" aria-label="Target hour UTC" value="00" />
+              <span class="time-input-separator">:</span>
+              <input id="coordinatedMinuteUtc" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="MM" aria-label="Target minute UTC" value="00" />
+              <span class="time-input-separator">:</span>
+              <input id="coordinatedSecondUtc" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="SS" aria-label="Target second UTC" value="00" />
+            </div>
+            <span class="hint">This is the impact time at target. Enter hour, minute and second separately (HH:MM:SS).</span>
+          </div>
+          <div class="field col-3">
+            <label for="rallyMinutes">Rally time</label>
+            <select id="rallyMinutes">
+              <option value="1">1 min</option>
+              <option value="2">2 min</option>
+              <option value="5" selected>5 min</option>
+            </select>
+            <span class="hint">Rally time is applied to calculations. Marches start after this countdown.</span>
+          </div>
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <table class="players-table" id="playersTable">
+          <thead>
+            <tr>
+              <th style="width: 120px;">Order</th>
+              <th>Nick</th>
+              <th style="width: 230px;">March time</th>
+              <th style="width: 90px;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="playersBody"></tbody>
+        </table>
+
+        <div class="toolbar">
+          <button class="btn" id="addPlayerBtn" type="button">Add player</button>
+          <span class="small">Maximum 10 players. Keep strongest to weakest order.</span>
+        </div>
+
+        <div class="mobile-collapse" id="attackDefenseSection">
+          <button class="btn mobile-collapse-toggle" id="toggleAttackDefenseBtn" type="button" data-open-label="Hide Attack & Defense" data-closed-label="Show Attack & Defense" aria-expanded="false">Show Attack & Defense</button>
+          <div class="mobile-collapse-content" id="attackDefenseContent">
+            <div class="row">
+              <div class="field col-6">
+                <label>Attack ratio</label>
+                <div class="ratio-group" id="attackRatioGroup">
+                  <div class="field"><label>INF</label><input id="attackInf" type="number" min="0" max="100" value="50" /></div>
+                  <div class="field"><label>CAV</label><input id="attackCav" type="number" min="0" max="100" value="20" /></div>
+                  <div class="field"><label>ARC</label><input id="attackArc" type="number" min="0" max="100" value="30" /></div>
+                </div>
+                <div class="ratio-total" id="attackRatioTotal">Attack total: 100%</div>
+              </div>
+
+              <div class="field col-6">
+                <label>Defense ratio</label>
+                <div class="ratio-group" id="defenseRatioGroup">
+                  <div class="field"><label>INF</label><input id="defenseInf" type="number" min="0" max="100" value="60" /></div>
+                  <div class="field"><label>CAV</label><input id="defenseCav" type="number" min="0" max="100" value="40" /></div>
+                  <div class="field"><label>ARC</label><input id="defenseArc" type="number" min="0" max="100" value="0" /></div>
+                </div>
+                <div class="ratio-total" id="defenseRatioTotal">Defense total: 100%</div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field col-6">
+                <label for="attackLine">First Hero for Attack</label>
+                <textarea id="attackLine" maxlength="140">Chenko, Yeonwoo, Amadeus, Amane, Margot</textarea>
+              </div>
+              <div class="field col-6">
+                <label for="defenseLine">First Hero for Defense</label>
+                <textarea id="defenseLine" maxlength="140">Hilde, Saul</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mobile-collapse" id="customMessageSection">
+          <button class="btn mobile-collapse-toggle" id="toggleCustomMessageBtn" type="button" data-open-label="Hide Custom Message" data-closed-label="Show Custom Message" aria-expanded="false">Show Custom Message</button>
+          <div class="mobile-collapse-content" id="customMessageContent">
+            <div class="row">
+              <div class="field col-12">
+                <label for="complementaryCustomMessage">Complementary Custom Message</label>
+                <textarea id="complementaryCustomMessage" maxlength="450" placeholder="Optional. This text will be used for Copy 2/2."></textarea>
+                <span class="hint">Maximum 450 characters. If present, it will be sent as message 2/2.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mobile-collapse" id="presetsSection">
+          <button class="btn mobile-collapse-toggle" id="togglePresetsBtn" type="button" data-open-label="Hide Presets" data-closed-label="Show Presets" aria-expanded="false">Show Presets</button>
+          <div class="mobile-collapse-content" id="presetsContent">
+            <div class="row">
+              <div class="field col-6">
+                <label for="presetName">Save / Load preset</label>
+                <input id="presetName" type="text" maxlength="60" placeholder="Preset name" />
+              </div>
+              <div class="field col-6">
+                <label for="presetSelect">Saved preset</label>
+                <select id="presetSelect">
+                  <option value="">Select a preset</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="toolbar">
+              <button class="btn" id="loadPresetBtn" type="button">Load preset</button>
+              <button class="btn" id="savePresetBtn" type="button">Save preset</button>
+              <button class="btn" id="deletePresetBtn" type="button">Delete preset</button>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <div>
+      <article class="panel visual-card">
+        <div class="visual-frame">
+          <img src="/static/screenshots/castle-battle.png" alt="Castle battle scene" />
+        </div>
+      </article>
+
+      <article class="panel">
+        <h2>Chat message</h2>
+        <p>The message auto-refreshes when the form is valid. Copy is enabled after a successful calculation.</p>
+        <div id="chatStatus" class="status"></div>
+        <div class="split-message-card" style="margin-top: 14px;">
+          <div class="split-message-head">
+            <p class="split-message-title" id="messageOutputLabel">Output</p>
+            <button class="btn btn-copy" id="copyBtn" type="button" disabled>Copy 1/1</button>
+          </div>
+          <textarea id="messageOutput" class="output" readonly placeholder="The generated message will appear here."></textarea>
+        </div>
+        <div id="extraMessagesContainer"></div>
+        <div class="field col-12" style="margin-top: 10px;">
+          <span class="hint">March time format: MM:SS (max 09:59). No need to type : .</span>
+          <span class="hint hint-credit">Tool concept credit: player <a href="https://discord.gg/9wdBKGMvMT" target="_blank" rel="noopener noreferrer">(CAM)</a> Beans Kingdoom 757</span>
+        </div>
+      </article>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const maxPlayers = 10;
+    const minPlayers = 2;
+
+    const playersBody = document.getElementById('playersBody');
+    const addPlayerBtn = document.getElementById('addPlayerBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const statusEl = document.getElementById('status');
+    const chatStatusEl = document.getElementById('chatStatus');
+    const outputEl = document.getElementById('messageOutput');
+    const outputLabelEl = document.getElementById('messageOutputLabel');
+    const extraMessagesContainer = document.getElementById('extraMessagesContainer');
+
+    const attackRatioTotal = document.getElementById('attackRatioTotal');
+    const defenseRatioTotal = document.getElementById('defenseRatioTotal');
+
+    const loadPresetBtn = document.getElementById('loadPresetBtn');
+    const savePresetBtn = document.getElementById('savePresetBtn');
+    const deletePresetBtn = document.getElementById('deletePresetBtn');
+    const presetSelect = document.getElementById('presetSelect');
+    const presetName = document.getElementById('presetName');
+    const quickImpactOffsetSelect = document.getElementById('quickImpactOffset');
+
+    let lastMessage = '';
+    let lastMessageParts = [];
+    let lastMessagePartsLabeled = [];
+    let messageLimit = 450;
+    let copyPartIndex = 0;
+    let autoCalcTimer = null;
+    let isCalculating = false;
+    let lastCalculatedSignature = '';
+    let deferMobileLivePreview = false;
+
+    function isMobileViewport() {
+      return window.matchMedia('(max-width: 760px)').matches;
+    }
+
+    function autoResizeTextarea(textarea, minHeight = 150) {
+      if (isMobileViewport() && textarea.classList.contains('output')) {
+        textarea.style.height = '140px';
+        return;
+      }
+      textarea.style.height = 'auto';
+      textarea.style.height = `${Math.max(textarea.scrollHeight, minHeight)}px`;
+    }
+
+    function autoResizeOutput() {
+      autoResizeTextarea(outputEl, 150);
+    }
+
+    function setStatus(message, ok = false) {
+      statusEl.textContent = message;
+      statusEl.className = `status ${ok ? 'ok' : 'error'}`;
+      if (chatStatusEl) {
+        chatStatusEl.textContent = message;
+        chatStatusEl.className = `status ${ok ? 'ok' : 'error'}`;
+      }
+    }
+
+    function partHeader(partText, fallback = 'Output') {
+      const firstLine = String(partText || '').split('\n')[0].trim();
+      return firstLine || fallback;
+    }
+
+    function updateCopyButtonLabel() {
+      if (!Array.isArray(lastMessagePartsLabeled) || lastMessagePartsLabeled.length === 0) {
+        copyBtn.textContent = 'Copy 1/1';
+        outputLabelEl.textContent = 'Output';
+        return;
+      }
+      if (lastMessagePartsLabeled.length === 1) {
+        copyBtn.textContent = 'Copy 1/1';
+        outputLabelEl.textContent = partHeader(lastMessagePartsLabeled[0], 'Output');
+        return;
+      }
+      copyBtn.textContent = `Copy 1/${lastMessagePartsLabeled.length}`;
+      outputLabelEl.textContent = partHeader(lastMessagePartsLabeled[0], `Output 1/${lastMessagePartsLabeled.length}`);
+    }
+
+    function renderOutputMessage() {
+      extraMessagesContainer.innerHTML = '';
+
+      if (!Array.isArray(lastMessagePartsLabeled) || lastMessagePartsLabeled.length === 0) {
+        outputEl.value = '';
+        autoResizeOutput();
+        return;
+      }
+
+      outputEl.value = lastMessagePartsLabeled[0];
+      autoResizeOutput();
+
+      if (lastMessagePartsLabeled.length <= 1) {
+        return;
+      }
+
+      for (let i = 1; i < lastMessagePartsLabeled.length; i += 1) {
+        const card = document.createElement('div');
+        card.className = 'split-message-card';
+
+        const head = document.createElement('div');
+        head.className = 'split-message-head';
+
+        const title = document.createElement('p');
+        title.className = 'split-message-title';
+        title.textContent = partHeader(lastMessagePartsLabeled[i], `Output ${i + 1}/${lastMessagePartsLabeled.length}`);
+
+        const copyPartBtn = document.createElement('button');
+        copyPartBtn.className = 'btn btn-copy';
+        copyPartBtn.type = 'button';
+        copyPartBtn.textContent = `Copy ${i + 1}/${lastMessagePartsLabeled.length}`;
+        copyPartBtn.addEventListener('click', () => copyMessagePart(i));
+
+        head.appendChild(title);
+        head.appendChild(copyPartBtn);
+
+        const textarea = document.createElement('textarea');
+        textarea.className = 'output';
+        textarea.readOnly = true;
+        textarea.value = lastMessagePartsLabeled[i];
+        autoResizeTextarea(textarea, 120);
+
+        card.appendChild(head);
+        card.appendChild(textarea);
+        extraMessagesContainer.appendChild(card);
+      }
+    }
+
+    function clearStatus() {
+      statusEl.textContent = '';
+      statusEl.className = 'status';
+      if (chatStatusEl) {
+        chatStatusEl.textContent = '';
+        chatStatusEl.className = 'status';
+      }
+    }
+
+    function initMobileCollapses() {
+      const isMobile = window.matchMedia('(max-width: 760px)').matches;
+      document.querySelectorAll('.mobile-collapse').forEach((section) => {
+        const toggle = section.querySelector('.mobile-collapse-toggle');
+        if (!toggle) {
+          return;
+        }
+
+        const openLabel = String(toggle.dataset.openLabel || 'Hide').trim();
+        const closedLabel = String(toggle.dataset.closedLabel || 'Show').trim();
+
+        const setOpen = (open) => {
+          section.classList.toggle('open', open);
+          toggle.setAttribute('aria-expanded', String(open));
+          toggle.textContent = open ? openLabel : closedLabel;
+        };
+
+        setOpen(!isMobile);
+        toggle.addEventListener('click', () => {
+          const currentlyOpen = section.classList.contains('open');
+          setOpen(!currentlyOpen);
+        });
+      });
+    }
+
+    function currentPlayerRows() {
+      return Array.from(playersBody.querySelectorAll('tr'));
+    }
+
+    function reindexPlayers() {
+      currentPlayerRows().forEach((row, index) => {
+        row.querySelector('.order-label').textContent = `Player ${index + 1}`;
+      });
+    }
+
+    function canRemovePlayers() {
+      return currentPlayerRows().length > minPlayers;
+    }
+
+    function updatePlayerButtons() {
+      const removable = canRemovePlayers();
+      currentPlayerRows().forEach((row) => {
+        const btn = row.querySelector('.remove-player-btn');
+        btn.disabled = !removable;
+      });
+      addPlayerBtn.disabled = currentPlayerRows().length >= maxPlayers;
+    }
+
+    function parseMarchTimeToParts(raw) {
+      const value = String(raw || '').trim();
+      if (!value) {
+        return { minute: '', second: '' };
+      }
+
+      if (/^\d+$/.test(value)) {
+        const total = Number(value);
+        if (!Number.isInteger(total) || total <= 0 || total > 599) {
+          return { minute: '', second: '' };
+        }
+        const minute = Math.floor(total / 60);
+        const second = total % 60;
+        return {
+          minute: String(minute).padStart(2, '0'),
+          second: String(second).padStart(2, '0'),
+        };
+      }
+
+      const match = value.match(/^(\d{1,2}):([0-5]\d)$/);
+      if (!match) {
+        return { minute: '', second: '' };
+      }
+
+      const minute = Number(match[1]);
+      const second = Number(match[2]);
+      const total = (minute * 60) + second;
+      if (total <= 0 || total > 599) {
+        return { minute: '', second: '' };
+      }
+
+      return {
+        minute: String(minute).padStart(2, '0'),
+        second: String(second).padStart(2, '0'),
+      };
+    }
+
+    function sanitizeMarchPart(raw) {
+      return String(raw || '').replace(/\D/g, '').slice(0, 2);
+    }
+
+    function clampMarchPart(part, maxValue) {
+      const sanitized = sanitizeMarchPart(part);
+      if (!sanitized) {
+        return '';
+      }
+
+      const numeric = Math.min(Number(sanitized), maxValue);
+      return String(numeric).padStart(2, '0');
+    }
+
+    function getRowMarchTime(row) {
+      const minute = sanitizeMarchPart(row.querySelector('.march-minute-input').value);
+      const second = sanitizeMarchPart(row.querySelector('.march-second-input').value);
+
+      if (!minute && !second) {
+        return '';
+      }
+
+      return `${minute.padStart(2, '0')}:${second.padStart(2, '0')}`;
+    }
+
+    function handleMarchPartInput(event) {
+      const input = event.target;
+      const value = sanitizeMarchPart(input.value);
+      input.value = value;
+
+      if (value.length === 2) {
+        const nextClass = input.dataset.nextClass;
+        if (nextClass) {
+          const row = input.closest('tr');
+          const nextInput = row ? row.querySelector(`.${nextClass}`) : null;
+          if (nextInput) {
+            nextInput.focus();
+            nextInput.select();
+          }
+        }
+      }
+
+      evaluateFormState();
+      lastMessage = '';
+      lastMessageParts = [];
+      lastMessagePartsLabeled = [];
+      copyPartIndex = 0;
+      lastCalculatedSignature = '';
+      renderOutputMessage();
+      updateCopyButtonLabel();
+      copyBtn.disabled = true;
+    }
+
+    function handleZeroPrefillFocus(event) {
+      const input = event.target;
+      if (String(input.value || '') === '00') {
+        input.value = '';
+      }
+    }
+
+    function handleMarchPartBlur(event) {
+      const input = event.target;
+      if (input.classList.contains('march-minute-input')) {
+        input.value = clampMarchPart(input.value, 9);
+      } else {
+        input.value = clampMarchPart(input.value, 59);
+      }
+
+      if (!input.value) {
+        input.value = '00';
+      }
+
+      evaluateFormState();
+    }
+
+    function handleMarchPartKeydown(event) {
+      if (event.key !== 'Backspace' || event.target.value) {
+        return;
+      }
+
+      const prevClass = event.target.dataset.prevClass;
+      if (!prevClass) {
+        return;
+      }
+
+      const row = event.target.closest('tr');
+      const previous = row ? row.querySelector(`.${prevClass}`) : null;
+      if (!previous) {
+        return;
+      }
+
+      previous.focus();
+      previous.selectionStart = previous.value.length;
+      previous.selectionEnd = previous.value.length;
+    }
+
+    function bindMarchInputs(row) {
+      const minuteInput = row.querySelector('.march-minute-input');
+      const secondInput = row.querySelector('.march-second-input');
+      if (!minuteInput || !secondInput) {
+        return;
+      }
+
+      minuteInput.dataset.prevClass = '';
+      minuteInput.dataset.nextClass = 'march-second-input';
+      secondInput.dataset.prevClass = 'march-minute-input';
+      secondInput.dataset.nextClass = '';
+
+      [minuteInput, secondInput].forEach((input) => {
+        input.addEventListener('focus', handleZeroPrefillFocus);
+        input.addEventListener('input', handleMarchPartInput);
+        input.addEventListener('keydown', handleMarchPartKeydown);
+        input.addEventListener('blur', handleMarchPartBlur);
+      });
+    }
+
+    function addPlayerRow(nick = '', marchTime = '') {
+      if (currentPlayerRows().length >= maxPlayers) {
+        return;
+      }
+
+      const hasCustomMarch = String(marchTime || '').trim().length > 0;
+      const marchParts = hasCustomMarch
+        ? parseMarchTimeToParts(marchTime)
+        : { minute: '00', second: '00' };
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td data-label="Order" class="order-label"></td>
+        <td data-label="Nick"><input type="text" class="nick-input" maxlength="20" placeholder="Nick" value="${nick.replace(/"/g, '&quot;')}" /></td>
+        <td data-label="March time (MM:SS)">
+          <div class="march-time-group">
+            <input type="text" class="march-minute-input" maxlength="2" inputmode="numeric" pattern="[0-9]*" placeholder="MM" aria-label="March minute" value="${marchParts.minute}" />
+            <span class="time-input-separator">:</span>
+            <input type="text" class="march-second-input" maxlength="2" inputmode="numeric" pattern="[0-9]*" placeholder="SS" aria-label="March second" value="${marchParts.second}" />
+          </div>
+        </td>
+        <td data-label="Action"><button type="button" class="btn remove-player-btn">Remove</button></td>
+      `;
+      playersBody.appendChild(tr);
+
+      bindMarchInputs(tr);
+
+      tr.querySelector('.remove-player-btn').addEventListener('click', () => {
+        if (!canRemovePlayers()) return;
+        tr.remove();
+        reindexPlayers();
+        updatePlayerButtons();
+        evaluateFormState();
+      });
+
+      tr.querySelectorAll('input').forEach((input) => {
+        input.addEventListener('input', () => {
+          evaluateFormState();
+          lastMessage = '';
+          lastMessageParts = [];
+          lastMessagePartsLabeled = [];
+          copyPartIndex = 0;
+          lastCalculatedSignature = '';
+          renderOutputMessage();
+          updateCopyButtonLabel();
+          copyBtn.disabled = true;
+        });
+      });
+
+      reindexPlayers();
+      updatePlayerButtons();
+    }
+
+    function ratioTotal(prefix) {
+      const inf = Number(document.getElementById(`${prefix}Inf`).value || 0);
+      const cav = Number(document.getElementById(`${prefix}Cav`).value || 0);
+      const arc = Number(document.getElementById(`${prefix}Arc`).value || 0);
+      return { inf, cav, arc, total: inf + cav + arc };
+    }
+
+    function updateRatioDisplay() {
+      const atk = ratioTotal('attack');
+      const def = ratioTotal('defense');
+
+      attackRatioTotal.textContent = `Attack total: ${atk.total}%`;
+      defenseRatioTotal.textContent = `Defense total: ${def.total}%`;
+
+      attackRatioTotal.classList.toggle('error', atk.total !== 100);
+      defenseRatioTotal.classList.toggle('error', def.total !== 100);
+
+      return atk.total === 100 && def.total === 100;
+    }
+
+    function sanitizeTimePart(raw) {
+      return String(raw || '').replace(/\D/g, '').slice(0, 2);
+    }
+
+    function parseTimeParts() {
+      const hour = sanitizeTimePart(document.getElementById('coordinatedHourUtc').value);
+      const minute = sanitizeTimePart(document.getElementById('coordinatedMinuteUtc').value);
+      const second = sanitizeTimePart(document.getElementById('coordinatedSecondUtc').value);
+      return { hour, minute, second };
+    }
+
+    function isValidTimeValue(hour, minute, second) {
+      if (![hour, minute, second].every((part) => /^\d{2}$/.test(part))) {
+        return false;
+      }
+
+      const hourValue = Number(hour);
+      const minuteValue = Number(minute);
+      const secondValue = Number(second);
+      return hourValue >= 0 && hourValue <= 23 && minuteValue >= 0 && minuteValue <= 59 && secondValue >= 0 && secondValue <= 59;
+    }
+
+    function clampTimePart(part, maxValue) {
+      const sanitized = sanitizeTimePart(part);
+      if (!sanitized) {
+        return '';
+      }
+
+      const numeric = Math.min(Number(sanitized), maxValue);
+      return String(numeric).padStart(2, '0');
+    }
+
+    function getCoordinatedTimeValue() {
+      const { hour, minute, second } = parseTimeParts();
+      if (!hour && !minute && !second) {
+        return '';
+      }
+      return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}`;
+    }
+
+    function setCoordinatedTimeValue(raw) {
+      const match = String(raw || '').trim().match(/^(\d{2}):(\d{2}):(\d{2})$/);
+      document.getElementById('coordinatedHourUtc').value = match ? match[1] : '';
+      document.getElementById('coordinatedMinuteUtc').value = match ? match[2] : '';
+      document.getElementById('coordinatedSecondUtc').value = match ? match[3] : '';
+    }
+
+    function applyQuickImpactOffset(minutesOffset) {
+      const selectedMinutes = Number(minutesOffset);
+      const rallyMinutes = Number(document.getElementById('rallyMinutes').value || 0);
+      const totalMinutes = selectedMinutes + rallyMinutes;
+
+      if (!Number.isFinite(totalMinutes) || totalMinutes <= 0) {
+        return;
+      }
+
+      const nowUtc = new Date();
+      const impactUtc = new Date(nowUtc.getTime() + (totalMinutes * 60 * 1000));
+      const hh = String(impactUtc.getUTCHours()).padStart(2, '0');
+      const mm = String(impactUtc.getUTCMinutes()).padStart(2, '0');
+      const ss = String(impactUtc.getUTCSeconds()).padStart(2, '0');
+      setCoordinatedTimeValue(`${hh}:${mm}:${ss}`);
+
+      evaluateFormState();
+      lastMessage = '';
+      lastMessageParts = [];
+      lastMessagePartsLabeled = [];
+      copyPartIndex = 0;
+      lastCalculatedSignature = '';
+      renderOutputMessage();
+      updateCopyButtonLabel();
+      copyBtn.disabled = true;
+    }
+
+    function collectFormPayload() {
+      const players = currentPlayerRows().map((row) => ({
+        nick: String(row.querySelector('.nick-input').value || '').trim(),
+        march_time: getRowMarchTime(row),
+      }));
+
+      return {
+        target: String(document.getElementById('target').value || '').trim(),
+        time_mode: 'start',
+        coordinated_time_utc: getCoordinatedTimeValue(),
+        rally_minutes: Number(document.getElementById('rallyMinutes').value || 0),
+        players,
+        attack_ratio: {
+          infantry: Number(document.getElementById('attackInf').value || 0),
+          cavalry: Number(document.getElementById('attackCav').value || 0),
+          archers: Number(document.getElementById('attackArc').value || 0),
+        },
+        defense_ratio: {
+          infantry: Number(document.getElementById('defenseInf').value || 0),
+          cavalry: Number(document.getElementById('defenseCav').value || 0),
+          archers: Number(document.getElementById('defenseArc').value || 0),
+        },
+        attack_line: String(document.getElementById('attackLine').value || '').trim(),
+        defense_line: String(document.getElementById('defenseLine').value || '').trim(),
+        complementary_custom_message: String(document.getElementById('complementaryCustomMessage').value || '').trim(),
+      };
+    }
+
+    function payloadSignature() {
+      return JSON.stringify(collectFormPayload());
+    }
+
+    function validateFormLocal() {
+      const payload = collectFormPayload();
+
+      const parseMarchSeconds = (raw) => {
+        const value = String(raw || '').trim();
+        if (!value) return null;
+        const match = value.match(/^(\d{2}):([0-5]\d)$/);
+        if (!match) return null;
+        const total = (Number(match[1]) * 60) + Number(match[2]);
+        return total > 0 && total <= 599 ? total : null;
+      };
+
+      if (!payload.target) return 'Select a target.';
+      if (!payload.coordinated_time_utc) return 'Set the target time (UTC).';
+      if (!/^\d{2}:\d{2}:\d{2}$/.test(payload.coordinated_time_utc)) return 'Target time must use HH:MM:SS.';
+      {
+        const [hour, minute, second] = payload.coordinated_time_utc.split(':');
+        if (!isValidTimeValue(hour, minute, second)) return 'Target time must be 00-23 for hours and 00-59 for minutes/seconds.';
+      }
+      if (![1, 2, 5].includes(payload.rally_minutes)) return 'Invalid rally value.';
+      if (!Array.isArray(payload.players) || payload.players.length < minPlayers) return 'At least 2 players are required.';
+      if (payload.players.length > maxPlayers) return 'Maximum supported players is 10.';
+
+      for (let i = 0; i < payload.players.length; i += 1) {
+        const p = payload.players[i];
+        if (!p.nick) return `Missing nick for Player ${i + 1}.`;
+        if (!p.march_time) return `Missing march time for Player ${i + 1}.`;
+        if (p.nick.length > 20) return `Nick too long for Player ${i + 1}. Maximum: 20 chars.`;
+        if (parseMarchSeconds(p.march_time) === null) return `Invalid march time for Player ${i + 1}. Use MM:SS (max 09:59).`;
+      }
+
+      if (payload.attack_line.length > 140) return 'First Hero for Attack is too long. Maximum: 140 chars.';
+      if (payload.defense_line.length > 140) return 'First Hero for Defense is too long. Maximum: 140 chars.';
+      if (payload.complementary_custom_message.length > 450) return 'Complementary Custom Message is too long. Maximum: 450 chars.';
+
+      const atkSum = payload.attack_ratio.infantry + payload.attack_ratio.cavalry + payload.attack_ratio.archers;
+      if (atkSum !== 100) return 'Attack ratio must add up to 100%.';
+      const defSum = payload.defense_ratio.infantry + payload.defense_ratio.cavalry + payload.defense_ratio.archers;
+      if (defSum !== 100) return 'Defense ratio must add up to 100%.';
+
+      return '';
+    }
+
+    function scheduleAutoCalculate() {
+      if (autoCalcTimer) {
+        clearTimeout(autoCalcTimer);
+      }
+
+      if (deferMobileLivePreview) {
+        return;
+      }
+
+      const error = validateFormLocal();
+      if (error || isCalculating) {
+        return;
+      }
+
+      const signature = payloadSignature();
+      if (signature === lastCalculatedSignature) {
+        return;
+      }
+
+      autoCalcTimer = setTimeout(() => {
+        calculate();
+      }, 300);
+    }
+
+    function evaluateFormState(shouldAutoCalculate = true) {
+      const ratiosOk = updateRatioDisplay();
+      const validationError = validateFormLocal();
+      if (validationError) {
+        setStatus(validationError);
+      } else {
+        clearStatus();
+        if (ratiosOk && shouldAutoCalculate) {
+          scheduleAutoCalculate();
+        }
+      }
+      if (!lastMessage) {
+        copyBtn.disabled = true;
+      }
+    }
+
+    async function calculate() {
+      const error = validateFormLocal();
+      if (error) {
+        setStatus(error);
+        return;
+      }
+
+      const currentSignature = payloadSignature();
+      if (currentSignature === lastCalculatedSignature || isCalculating) {
+        return;
+      }
+
+      clearStatus();
+      isCalculating = true;
+      let calculationFailed = false;
+      try {
+        const response = await fetch('/api/coordinated-attack/calculate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(collectFormPayload()),
+        });
+
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) {
+          setStatus(payload.message || 'Calculation failed.');
+          copyBtn.disabled = true;
+          calculationFailed = true;
+          return;
+        }
+
+        messageLimit = Number(payload.result.message_limit || 450) || 450;
+        lastMessage = String(payload.result.message || '').trim();
+        lastMessageParts = Array.isArray(payload.result.message_parts)
+          ? payload.result.message_parts.map((part) => String(part || '').trim()).filter((part) => part)
+          : [];
+        lastMessagePartsLabeled = Array.isArray(payload.result.message_parts_labeled)
+          ? payload.result.message_parts_labeled.map((part) => String(part || '').trim()).filter((part) => part)
+          : [];
+        if (lastMessageParts.length === 0 && lastMessage) {
+          lastMessageParts = [lastMessage];
+        }
+        if (lastMessagePartsLabeled.length === 0) {
+          lastMessagePartsLabeled = [...lastMessageParts];
+        }
+        copyPartIndex = 0;
+        renderOutputMessage();
+        updateCopyButtonLabel();
+        copyBtn.disabled = !lastMessage;
+        lastCalculatedSignature = currentSignature;
+        if (lastMessageParts.length > 1) {
+          setStatus(`Calculation completed. Split into ${lastMessageParts.length} messages (max ${messageLimit} chars each).`, true);
+        } else {
+          setStatus('Calculation completed.', true);
+        }
+      } catch (_errorCaught) {
+        setStatus('Network error while calculating.');
+        copyBtn.disabled = true;
+        calculationFailed = true;
+      } finally {
+        isCalculating = false;
+        if (calculationFailed) {
+          updateRatioDisplay();
+        } else {
+          evaluateFormState(false);
+        }
+      }
+    }
+
+    async function copyMessagePart(partIndex) {
+      if (!lastMessage || !Array.isArray(lastMessagePartsLabeled) || lastMessagePartsLabeled.length === 0) {
+        setStatus('There is no message to copy.');
+        return;
+      }
+
+      const copyTextWithFallback = async (text) => {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return;
+        }
+
+        const helper = document.createElement('textarea');
+        helper.value = text;
+        helper.setAttribute('readonly', '');
+        helper.style.position = 'fixed';
+        helper.style.top = '-9999px';
+        helper.style.left = '-9999px';
+        document.body.appendChild(helper);
+        helper.focus();
+        helper.select();
+        helper.setSelectionRange(0, helper.value.length);
+
+        const copied = document.execCommand('copy');
+        document.body.removeChild(helper);
+        if (!copied) {
+          throw new Error('Fallback copy failed');
+        }
+      };
+
+      try {
+        const totalParts = lastMessagePartsLabeled.length;
+        const safeIndex = Math.max(0, Math.min(partIndex, totalParts - 1));
+        const partToCopy = totalParts > 1
+          ? (lastMessagePartsLabeled[safeIndex] || lastMessageParts[safeIndex])
+          : lastMessage;
+        await copyTextWithFallback(partToCopy);
+        if (totalParts > 1) {
+          setStatus(`Copied ${safeIndex + 1}/${totalParts}.`, true);
+        } else {
+          setStatus('Message copied to clipboard.', true);
+        }
+      } catch (_errorCaught) {
+        setStatus('Clipboard copy failed. Please copy manually.');
+      }
+    }
+
+    async function copyMessage() {
+      return copyMessagePart(0);
+    }
+
+    async function refreshPresets() {
+      const target = String(document.getElementById('target').value || '').trim();
+      const response = await fetch(`/api/coordinated-attack/presets?target=${encodeURIComponent(target)}`);
+      const payload = await response.json();
+
+      presetSelect.innerHTML = '<option value="">Select a preset</option>';
+      if (!response.ok || !payload.ok || !Array.isArray(payload.presets)) {
+        setStatus('Could not load presets.');
+        return;
+      }
+
+      payload.presets.forEach((item) => {
+        const option = document.createElement('option');
+        option.value = item.name;
+        option.textContent = `${item.name} (${item.updated_at || 'no date'})`;
+        presetSelect.appendChild(option);
+      });
+    }
+
+    function applyFormData(form) {
+      document.getElementById('target').value = String(form.target || 'NORTH TOWER');
+      setCoordinatedTimeValue(String(form.coordinated_time_utc || '').slice(0, 8));
+      document.getElementById('rallyMinutes').value = String(form.rally_minutes || '5');
+
+      playersBody.innerHTML = '';
+      const players = Array.isArray(form.players) ? form.players : [];
+      players.slice(0, maxPlayers).forEach((player) => {
+        addPlayerRow(String(player.nick || ''), String(player.march_time || ''));
+      });
+
+      while (currentPlayerRows().length < minPlayers) {
+        addPlayerRow('', '');
+      }
+
+      const attack = form.attack_ratio || {};
+      const defense = form.defense_ratio || {};
+      document.getElementById('attackInf').value = Number(attack.infantry ?? 50);
+      document.getElementById('attackCav').value = Number(attack.cavalry ?? 20);
+      document.getElementById('attackArc').value = Number(attack.archers ?? 30);
+
+      document.getElementById('defenseInf').value = Number(defense.infantry ?? 60);
+      document.getElementById('defenseCav').value = Number(defense.cavalry ?? 40);
+      document.getElementById('defenseArc').value = Number(defense.archers ?? 0);
+
+      const attackLine = String(form.attack_line || '').trim();
+      const defenseLine = String(form.defense_line || '').trim();
+      const complementaryCustomMessage = String(form.complementary_custom_message || '').trim();
+      const legacyAttackLine = Array.isArray(form.attack_heroes) ? form.attack_heroes.join(', ') : '';
+      const legacyDefenseLine = Array.isArray(form.defense_heroes) ? form.defense_heroes.join(', ') : '';
+
+      document.getElementById('attackLine').value = attackLine || legacyAttackLine || 'Chenko, Yeonwoo, Amadeus, Amane, Margot';
+      document.getElementById('defenseLine').value = defenseLine || legacyDefenseLine || 'Hilde, Saul';
+      document.getElementById('complementaryCustomMessage').value = complementaryCustomMessage;
+
+      lastMessage = '';
+      lastMessageParts = [];
+      lastMessagePartsLabeled = [];
+      copyPartIndex = 0;
+      lastCalculatedSignature = '';
+      renderOutputMessage();
+      updateCopyButtonLabel();
+      copyBtn.disabled = true;
+      evaluateFormState();
+    }
+
+    async function loadPreset() {
+      const selected = String(presetSelect.value || '').trim();
+      const target = String(document.getElementById('target').value || '').trim();
+      if (!selected) {
+        setStatus('Select a preset to load.');
+        return;
+      }
+
+      const response = await fetch(`/api/coordinated-attack/presets/${encodeURIComponent(selected)}?target=${encodeURIComponent(target)}`);
+      const payload = await response.json();
+      if (!response.ok || !payload.ok || !payload.preset || !payload.preset.form) {
+        setStatus(payload.message || 'Could not load preset.');
+        return;
+      }
+
+      applyFormData(payload.preset.form);
+      presetName.value = String(payload.preset.name || selected).trim();
+      presetSelect.value = String(payload.preset.name || selected).trim();
+      setStatus('Preset loaded.', true);
+    }
+
+    async function savePreset() {
+      const name = String(presetName.value || '').trim();
+      if (!name) {
+        setStatus('Enter a preset name.');
+        return;
+      }
+
+      const error = validateFormLocal();
+      if (error) {
+        setStatus(error);
+        return;
+      }
+
+      const body = {
+        name,
+        form: collectFormPayload(),
+      };
+
+      const response = await fetch('/api/coordinated-attack/presets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) {
+        setStatus(payload.message || 'Could not save preset.');
+        return;
+      }
+
+      setStatus('Preset saved.', true);
+      await refreshPresets();
+      presetSelect.value = name;
+      presetName.value = name;
+    }
+
+    async function deletePreset() {
+      const selected = String(presetSelect.value || presetName.value || '').trim();
+      const target = String(document.getElementById('target').value || '').trim();
+      if (!selected) {
+        setStatus('Select or enter a preset to delete.');
+        return;
+      }
+
+      const response = await fetch(`/api/coordinated-attack/presets/${encodeURIComponent(selected)}?target=${encodeURIComponent(target)}`, {
+        method: 'DELETE',
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) {
+        setStatus(payload.message || 'Could not delete preset.');
+        return;
+      }
+
+      setStatus('Preset deleted.', true);
+      presetName.value = '';
+      await refreshPresets();
+      presetSelect.value = '';
+    }
+
+    addPlayerBtn.addEventListener('click', () => {
+      addPlayerRow('', '');
+      evaluateFormState();
+    });
+
+    copyBtn.addEventListener('click', copyMessage);
+
+    loadPresetBtn.addEventListener('click', () => {
+      loadPreset().catch(() => setStatus('Could not load preset.'));
+    });
+
+    savePresetBtn.addEventListener('click', () => {
+      savePreset().catch(() => setStatus('Could not save preset.'));
+    });
+
+    deletePresetBtn.addEventListener('click', () => {
+      deletePreset().catch(() => setStatus('Could not delete preset.'));
+    });
+
+    document.getElementById('target').addEventListener('change', () => {
+      refreshPresets().catch(() => setStatus('Could not load presets.'));
+      evaluateFormState();
+    });
+
+    quickImpactOffsetSelect.addEventListener('change', () => {
+      const selected = String(quickImpactOffsetSelect.value || '').trim();
+      if (!selected) {
+        return;
+      }
+      applyQuickImpactOffset(selected);
+      quickImpactOffsetSelect.value = '';
+    });
+
+    function handleTimePartInput(event) {
+      const input = event.target;
+      const value = sanitizeTimePart(input.value);
+      input.value = value;
+
+      if (value.length === 2) {
+        const nextId = input.dataset.next;
+        if (nextId) {
+          document.getElementById(nextId).focus();
+          document.getElementById(nextId).select();
+        }
+      }
+
+      evaluateFormState();
+      lastMessage = '';
+      lastMessageParts = [];
+      lastMessagePartsLabeled = [];
+      copyPartIndex = 0;
+      lastCalculatedSignature = '';
+      renderOutputMessage();
+      updateCopyButtonLabel();
+      copyBtn.disabled = true;
+    }
+
+    function handleTimePartBlur(event) {
+      const input = event.target;
+      if (input.id === 'coordinatedHourUtc') {
+        input.value = clampTimePart(input.value, 23);
+      } else {
+        input.value = clampTimePart(input.value, 59);
+      }
+
+      if (!input.value) {
+        input.value = '00';
+      }
+
+      evaluateFormState();
+    }
+
+    function handleTimePartKeydown(event) {
+      if (event.key !== 'Backspace' || event.target.value) {
+        return;
+      }
+
+      const prevId = event.target.dataset.prev;
+      if (!prevId) {
+        return;
+      }
+
+      const previous = document.getElementById(prevId);
+      previous.focus();
+      previous.selectionStart = previous.value.length;
+      previous.selectionEnd = previous.value.length;
+    }
+
+    [
+      ['coordinatedHourUtc', '', 'coordinatedMinuteUtc'],
+      ['coordinatedMinuteUtc', 'coordinatedHourUtc', 'coordinatedSecondUtc'],
+      ['coordinatedSecondUtc', 'coordinatedMinuteUtc', ''],
+    ].forEach(([id, prevId, nextId]) => {
+      const input = document.getElementById(id);
+      input.dataset.prev = prevId;
+      input.dataset.next = nextId;
+      input.addEventListener('focus', handleZeroPrefillFocus);
+      input.addEventListener('input', handleTimePartInput);
+      input.addEventListener('keydown', handleTimePartKeydown);
+      input.addEventListener('blur', handleTimePartBlur);
+    });
+
+    ['rallyMinutes', 'attackInf', 'attackCav', 'attackArc', 'defenseInf', 'defenseCav', 'defenseArc']
+      .forEach((id) => {
+        document.getElementById(id).addEventListener('input', () => {
+          evaluateFormState();
+          lastMessage = '';
+          lastMessageParts = [];
+          lastMessagePartsLabeled = [];
+          copyPartIndex = 0;
+          lastCalculatedSignature = '';
+          renderOutputMessage();
+          updateCopyButtonLabel();
+          copyBtn.disabled = true;
+        });
+      });
+
+    ['attackLine', 'defenseLine', 'complementaryCustomMessage']
+      .forEach((id) => {
+        const field = document.getElementById(id);
+        field.addEventListener('focus', () => {
+          if (isMobileViewport()) {
+            deferMobileLivePreview = true;
+          }
+        });
+
+        field.addEventListener('input', () => {
+          if (isMobileViewport()) {
+            evaluateFormState(false);
+            return;
+          }
+
+          evaluateFormState();
+          lastMessage = '';
+          lastMessageParts = [];
+          lastMessagePartsLabeled = [];
+          copyPartIndex = 0;
+          lastCalculatedSignature = '';
+          renderOutputMessage();
+          updateCopyButtonLabel();
+          copyBtn.disabled = true;
+        });
+
+        field.addEventListener('blur', () => {
+          if (isMobileViewport()) {
+            deferMobileLivePreview = false;
+            evaluateFormState();
+          }
+        });
+      });
+
+    addPlayerRow('', '');
+    addPlayerRow('', '');
+    setCoordinatedTimeValue('00:00:00');
+    initMobileCollapses();
+    updateCopyButtonLabel();
+    autoResizeOutput();
+    evaluateFormState();
+    refreshPresets().catch(() => setStatus('Could not load presets.'));
+  </script>
+</body>
+</html>
