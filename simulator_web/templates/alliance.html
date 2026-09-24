@@ -1916,6 +1916,15 @@
 
         {% if alliance %}
         <div class="tab-panel" data-tab-panel="{{ event_key }}" style="display:none;">
+          {% if user and user.is_admin %}
+          <div id="shared_plan_lock_overlay" class="ac-lock-overlay" hidden role="status">
+            <div class="ac-lock-dialog">
+              <h3 id="shared_plan_lock_title">{{ event_name }} is being edited</h3>
+              <p id="shared_plan_lock_message" class="muted"></p>
+              <button type="button" id="shared_plan_take_control_btn">Take control</button>
+            </div>
+          </div>
+          {% endif %}
           <div class="card nap4-panel-card">
             <div id="swordland_loading_overlay" class="nap4-loading-overlay swordland-loading-overlay" hidden aria-live="polite" aria-busy="true">
               <div class="nap4-loading-box">
@@ -1928,6 +1937,7 @@
               {% if user and user.is_admin %}
                 <form method="post" action="/alliance/{{ event_key }}/plan/save" id="swordland_plan_form" data-event-key="{{ event_key }}">
                   <input type="hidden" name="slot" value="{{ swordland.slot if swordland else 1 }}" />
+                  <input type="hidden" name="lock_token" id="shared_plan_lock_token" />
                   <div class="swordland-plan-context">
                     <h2 class="swordland-context-title">{{ event_name }}{% if event_key == 'swordland' %} {{ swordland.slot if swordland else 1 }}{% endif %}</h2>
                     <p class="muted swordland-context-copy">{% if event_key == 'kvk' %}Use your NAP4 server roster against the main alliances of the rival server.{% else %}Compare your alliance against a rival JeabsPlus roster.{% endif %}</p>
@@ -3246,6 +3256,9 @@
         }
         if (target === 'ac') window.setTimeout(function () {
           if (typeof ensureAcControl === 'function') ensureAcControl();
+        }, 0);
+        if (target === 'swordland' || target === 'kvk') window.setTimeout(function () {
+          if (typeof ensureSharedPlanControl === 'function') ensureSharedPlanControl();
         }, 0);
         trackUsageSection(target);
       }
@@ -5377,6 +5390,114 @@
         });
       }
       refreshSwordlandPlanChoices();
+
+      const sharedPlanForm = document.getElementById('swordland_plan_form');
+      const sharedPlanOverlay = document.getElementById('shared_plan_lock_overlay');
+      const sharedPlanEventKey = sharedPlanForm ? sharedPlanForm.dataset.eventKey : '';
+      const sharedPlanSlot = sharedPlanForm ? Number(new FormData(sharedPlanForm).get('slot') || 1) : 1;
+      const sharedPlanStorageKey = 'sharedPlanLockToken:' + sharedPlanEventKey + ':' + sharedPlanSlot;
+      const sharedPlanLockToken = sessionStorage.getItem(sharedPlanStorageKey) || (window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random());
+      if (sharedPlanForm) {
+        sessionStorage.setItem(sharedPlanStorageKey, sharedPlanLockToken);
+        document.getElementById('shared_plan_lock_token').value = sharedPlanLockToken;
+      }
+      let sharedPlanHasControl = false;
+      let sharedPlanRequestPending = false;
+      let sharedPlanHeartbeatTimer = null;
+      let sharedPlanSignature = '';
+
+      function setSharedPlanControlState(hasControl, ownerName) {
+        if (!sharedPlanForm || !sharedPlanOverlay) return;
+        sharedPlanHasControl = hasControl;
+        sharedPlanOverlay.hidden = hasControl;
+        document.getElementById('shared_plan_lock_message').textContent = ownerName + ' is editing. This view updates automatically.';
+        for (const control of sharedPlanForm.querySelectorAll('button, input, textarea, select')) {
+          if (control.id !== 'shared_plan_lock_token') control.disabled = !hasControl;
+        }
+      }
+
+      function setSharedPlanValue(name, value) {
+        const control = sharedPlanForm ? sharedPlanForm.elements.namedItem(name) : null;
+        if (!control) return;
+        control.value = value == null ? '' : String(value);
+        control.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      function applySharedPlan(plan) {
+        if (!sharedPlanForm || !plan || typeof plan !== 'object') return;
+        if (sharedPlanEventKey === 'kvk') {
+          for (const [castleKey, castle] of Object.entries(plan.castles || {})) {
+            setSharedPlanValue(castleKey + '_attack_1_formation', castle.attack_1_formation);
+            setSharedPlanValue(castleKey + '_attack_2_formation', castle.attack_2_formation);
+            setSharedPlanValue(castleKey + '_defense_formation', castle.defense_formation);
+            for (const [role, row] of Object.entries(castle.rows || {})) {
+              setSharedPlanValue(castleKey + '_' + role + '_player', row.player_id);
+              setSharedPlanValue(castleKey + '_' + role + '_attack', row.attack_hero);
+              setSharedPlanValue(castleKey + '_' + role + '_garrison', row.garrison_hero);
+              for (const [action, troops] of Object.entries(row.troops || {})) {
+                for (const [troop, value] of Object.entries(troops || {})) setSharedPlanValue(castleKey + '_' + role + '_' + action + '_' + troop, value);
+              }
+            }
+          }
+          const turrets = plan.turrets || {};
+          setSharedPlanValue('turrets_attack_formation', turrets.attack_formation);
+          setSharedPlanValue('turrets_defense_formation', turrets.defense_formation);
+          for (const [role, playerId] of Object.entries(turrets.captains || {})) setSharedPlanValue('turrets_' + role, playerId);
+        } else {
+          setSharedPlanValue('aggressor', plan.aggressor);
+          for (const [team, roles] of Object.entries(plan.teams || {})) {
+            const reserveNumbers = Object.keys(roles || {}).filter(function (role) { return /^reserve_\d+$/.test(role); }).map(function (role) { return Number(role.split('_')[1]); });
+            const requiredReserves = Math.max(1, ...reserveNumbers);
+            const teamCard = sharedPlanForm.querySelector('.swordland-team-card [data-team="' + team + '"]')?.closest('.swordland-team-card');
+            const addButton = teamCard ? teamCard.querySelector('.js-add-swordland-reserve') : null;
+            while (addButton && teamCard.querySelectorAll('select[name^="' + team + '_reserve_"]').length < requiredReserves) addButton.click();
+            for (const [role, playerId] of Object.entries(roles || {})) setSharedPlanValue(team + '_' + role, playerId);
+          }
+        }
+        for (const select of swordlandPlanSelects) {
+          const picker = select.parentElement;
+          const query = picker ? picker.querySelector('.js-swordland-player-query') : null;
+          if (query) query.value = getSwordlandSelectedLabel(select);
+        }
+        refreshSwordlandPlanChoices();
+      }
+
+      async function requestSharedPlanControl(action) {
+        if (!sharedPlanForm || sharedPlanRequestPending) return;
+        sharedPlanRequestPending = true;
+        try {
+          const response = await fetch('/alliance/shared-plan/lock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: action, event_key: sharedPlanEventKey, slot: sharedPlanSlot, lock_token: sharedPlanLockToken })
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || 'Could not check editing control.');
+          setSharedPlanControlState(Boolean(payload.has_control), payload.owner_name || 'Another administrator');
+          const signature = JSON.stringify(payload.plan || {});
+          if ((action === 'takeover' || !payload.has_control) && signature !== sharedPlanSignature) {
+            applySharedPlan(payload.plan || {});
+            sharedPlanSignature = signature;
+          }
+        } catch (error) {
+          setSharedPlanControlState(false, error.message || 'Connection lost');
+        } finally {
+          sharedPlanRequestPending = false;
+        }
+      }
+
+      function ensureSharedPlanControl() {
+        if (!sharedPlanForm) return;
+        requestSharedPlanControl(sharedPlanHasControl ? 'heartbeat' : 'acquire');
+        window.clearInterval(sharedPlanHeartbeatTimer);
+        sharedPlanHeartbeatTimer = window.setInterval(function () {
+          const panel = document.querySelector('[data-tab-panel="' + sharedPlanEventKey + '"]');
+          if (panel && panel.style.display !== 'none') requestSharedPlanControl(sharedPlanHasControl ? 'heartbeat' : 'acquire');
+        }, 3000);
+      }
+
+      const sharedPlanTakeControlButton = document.getElementById('shared_plan_take_control_btn');
+      if (sharedPlanTakeControlButton) sharedPlanTakeControlButton.addEventListener('click', function () { requestSharedPlanControl('takeover'); });
 
       const kvkPlanForm = document.querySelector('#swordland_plan_form[data-event-key="kvk"]');
       const kvkAutosaveStatus = document.getElementById('kvk_autosave_status');

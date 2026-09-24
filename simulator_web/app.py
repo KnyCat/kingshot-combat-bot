@@ -3712,6 +3712,27 @@ def _swordland_plan_field(slot: int, event_key: str = "swordland") -> str:
     return "swordland2_plan_json" if slot == 2 else "swordland_plan_json"
 
 
+def _shared_plan_key(slot: int, event_key: str) -> str:
+    if event_key == "kvk":
+        return "kvk"
+    return f"swordland{2 if slot == 2 else 1}"
+
+
+def _owns_shared_plan_lock(connection: sqlite3.Connection, alliance_id: int, plan_key: str, token: str, user_id: int) -> bool:
+    row = connection.execute(
+        "SELECT lock_token, user_id, updated_at FROM alliance_plan_locks WHERE alliance_id = ? AND event_key = ?",
+        (alliance_id, plan_key),
+    ).fetchone()
+    if not row:
+        return False
+    updated_at = datetime.fromisoformat(str(row["updated_at"] or "1970-01-01T00:00:00+00:00"))
+    return (
+        (datetime.now(timezone.utc) - updated_at).total_seconds() <= 120
+        and str(row["lock_token"] or "") == token
+        and int(row["user_id"] or 0) == user_id
+    )
+
+
 def _build_swordland_plan_context(
     alliance: dict[str, Any], members: list[dict[str, Any]], slot: int, event_key: str = "swordland"
 ) -> dict[str, Any]:
@@ -5027,6 +5048,18 @@ def _init_alliance_registry_db() -> None:
             connection.execute("ALTER TABLE alliances ADD COLUMN ac_lock_user_id INTEGER")
         if "ac_lock_updated_at" not in alliance_columns:
             connection.execute("ALTER TABLE alliances ADD COLUMN ac_lock_updated_at TEXT")
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS alliance_plan_locks (
+                alliance_id INTEGER NOT NULL,
+                event_key TEXT NOT NULL,
+                lock_token TEXT NOT NULL,
+                user_id INTEGER NOT NULL,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (alliance_id, event_key)
+            )
+            """
+        )
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS alliance_players (
@@ -8445,6 +8478,52 @@ def create_app() -> Flask:
             return jsonify({"ok": False, "message": error}), 409
         return jsonify({"ok": True, "job": job}), 202
 
+    @app.post("/alliance/shared-plan/lock")
+    def alliance_shared_plan_lock() -> Any:
+        user = _get_current_user()
+        if not user or not user.get("alliance_id") or not user.get("is_admin"):
+            return jsonify({"error": "Only alliance admins can edit this plan."}), 403
+        payload = request.get_json(silent=True) or {}
+        action = str(payload.get("action") or "acquire").strip().lower()
+        event_key = str(payload.get("event_key") or "").strip().lower()
+        slot = 2 if _parse_loose_int(payload.get("slot"), 1) == 2 else 1
+        lock_token = str(payload.get("lock_token") or "").strip()[:200]
+        if action not in {"acquire", "heartbeat", "takeover"} or event_key not in {"swordland", "kvk"} or not lock_token:
+            return jsonify({"error": "Invalid shared plan lock request."}), 400
+
+        alliance_id = int(user["alliance_id"])
+        plan_key = _shared_plan_key(slot, event_key)
+        plan_field = _swordland_plan_field(slot, event_key)
+        now = datetime.now(timezone.utc)
+        with _get_db_connection() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            lock_row = connection.execute(
+                """
+                SELECT alliance_plan_locks.lock_token, alliance_plan_locks.user_id,
+                       alliance_plan_locks.updated_at, alliance_users.username
+                FROM alliance_plan_locks
+                LEFT JOIN alliance_users ON alliance_users.id = alliance_plan_locks.user_id
+                WHERE alliance_plan_locks.alliance_id = ? AND alliance_plan_locks.event_key = ?
+                """,
+                (alliance_id, plan_key),
+            ).fetchone()
+            plan_row = connection.execute(f"SELECT {plan_field} AS plan_json FROM alliances WHERE id = ?", (alliance_id,)).fetchone()
+            owns_lock = bool(lock_row) and str(lock_row["lock_token"] or "") == lock_token and int(lock_row["user_id"] or 0) == int(user["id"])
+            expired = not lock_row or (now - datetime.fromisoformat(str(lock_row["updated_at"] or "1970-01-01T00:00:00+00:00"))).total_seconds() > 120
+            available = expired or owns_lock
+            if action == "takeover" or (action in {"acquire", "heartbeat"} and available):
+                connection.execute(
+                    """
+                    INSERT INTO alliance_plan_locks (alliance_id, event_key, lock_token, user_id, updated_at)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(alliance_id, event_key) DO UPDATE SET
+                        lock_token = excluded.lock_token, user_id = excluded.user_id, updated_at = excluded.updated_at
+                    """,
+                    (alliance_id, plan_key, lock_token, int(user["id"]), now.isoformat()),
+                )
+                return jsonify({"ok": True, "has_control": True, "owner_name": str(user.get("username") or "Administrator"), "plan": json.loads(str(plan_row["plan_json"] or "{}"))})
+            return jsonify({"ok": True, "has_control": False, "owner_name": str(lock_row["username"] or "Another administrator"), "plan": json.loads(str(plan_row["plan_json"] or "{}"))})
+
     @app.post("/alliance/kvk/plan/save")
     def alliance_kvk_plan_save() -> Any:
         wants_json = request.headers.get("X-Requested-With") == "XMLHttpRequest"
@@ -8462,6 +8541,10 @@ def create_app() -> Flask:
         alliance = _get_current_alliance_for_user(user)
         if not alliance:
             return kvk_error("Alliance not found for this user.", 404)
+        lock_token = str(request.form.get("lock_token") or "").strip()
+        with _get_db_connection() as connection:
+            if not _owns_shared_plan_lock(connection, int(alliance["id"]), "kvk", lock_token, int(user["id"])):
+                return kvk_error("Another administrator has control of KVK.", 409)
 
         members = _load_alliance_member_rows_for_swordland(int(alliance["id"]))
         valid_ids = {str(member.get("game_id") or "").strip() for member in members}
@@ -8539,6 +8622,11 @@ def create_app() -> Flask:
             return _redirect_to_alliance_dashboard(user, tab="swordland")
 
         slot = 2 if _parse_loose_int(request.form.get("slot"), 1) == 2 else 1
+        lock_token = str(request.form.get("lock_token") or "").strip()
+        with _get_db_connection() as connection:
+            if not _owns_shared_plan_lock(connection, int(alliance["id"]), _shared_plan_key(slot, "swordland"), lock_token, int(user["id"])):
+                _set_error("Another administrator has control of this Swordland plan.")
+                return _redirect_to_alliance_dashboard(user, tab="swordland", swordland_slot=slot)
         members = _load_alliance_member_rows_for_swordland(int(alliance["id"]))
         valid_ids = {str(member.get("game_id") or "").strip() for member in members}
         valid_ids.discard("")
