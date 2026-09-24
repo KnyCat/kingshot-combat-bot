@@ -58,8 +58,8 @@ def extract(
     ]
     powers = [
         token for token in selected
-        if re.fullmatch(r"\D*\d[.,]\d{3}\D*", token["text"])
-        and 500 <= int(token["digits"]) <= 9999
+        if re.fullmatch(r"\D*\d{1,2}[.,]\d{3}\D*", token["text"])
+        and 500 <= int(token["digits"][-4:]) <= 9999
         and (image_width * 0.16 < token["center_x"] < image_width * 0.43 if side == "left" else image_width * 0.57 < token["center_x"] < image_width * 0.84)
     ]
     powers.sort(key=lambda token: token["center_y"])
@@ -85,7 +85,7 @@ def extract(
             and token["text"].upper() not in {"WIN", "VS"}
         ]
         name = max(name_candidates, key=lambda token: (token["score"], len(token["text"])), default={"text": ""})["text"].strip()
-        name_key = re.sub(r"\W", "", name).casefold()
+        name_key = re.sub(r"^\d+", "", re.sub(r"\W", "", name).casefold())
         parsed_rows.append({
             "position": position_value,
             "name": name,
@@ -95,8 +95,20 @@ def extract(
         })
 
     parsed_rows.sort(key=lambda row: float(row["center_y"]))
-    anchored_rows = [(index, int(row["position"])) for index, row in enumerate(parsed_rows) if row["position"]]
-    for index, row in enumerate(parsed_rows):
+    group_index = -1
+    previous_name_key = ""
+    for row in parsed_rows:
+        name_key = str(row["name_key"])
+        if not name_key or name_key != previous_name_key:
+            group_index += 1
+        row["group"] = group_index
+        previous_name_key = name_key
+    anchored_groups = [
+        (int(row["group"]), int(row["position"]))
+        for row in parsed_rows
+        if row["position"]
+    ]
+    for row in parsed_rows:
         position_value = int(row["position"])
         name = str(row["name"])
         name_key = str(row["name_key"])
@@ -106,9 +118,10 @@ def extract(
         elif name_key and name_key in known_positions:
             position_value = known_positions[name_key]
         else:
-            nearest_anchor = min(anchored_rows, key=lambda anchor: abs(anchor[0] - index), default=None)
+            row_group = int(row["group"])
+            nearest_anchor = min(anchored_groups, key=lambda anchor: abs(anchor[0] - row_group), default=None)
             if nearest_anchor:
-                position_value = nearest_anchor[1] + index - nearest_anchor[0]
+                position_value = nearest_anchor[1] + row_group - nearest_anchor[0]
             if not 1 <= position_value <= 20:
                 continue
             if name_key:

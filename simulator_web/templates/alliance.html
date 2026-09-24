@@ -3353,9 +3353,7 @@
           if (!response.ok) throw new Error(payload.error || 'Could not check AC editing control.');
           setAcControlState(Boolean(payload.has_control), payload.owner_name || 'Another administrator');
           if (payload.has_control && action === 'takeover') {
-            const reloadUrl = new URL(window.location.href);
-            reloadUrl.searchParams.set('tab', 'ac');
-            window.location.assign(reloadUrl.toString());
+            applyAcPlan(payload.plan || {});
           }
         } catch (error) {
           setAcControlState(false, error.message || 'Connection lost');
@@ -3409,6 +3407,27 @@
       let acDraggedPlayerId = null;
       let acDragPointerY = null;
       let acAutoScrollFrame = null;
+
+      function applyAcPlan(plan) {
+        acRegisteredIds.clear();
+        const registeredIds = Array.isArray(plan.registered_ids) ? plan.registered_ids : acRoster.map(function (player) { return player.id; });
+        registeredIds.map(Number).filter(function (id) { return acPlayersById.has(id); }).forEach(function (id) { acRegisteredIds.add(id); });
+        for (const laneKey of Object.keys(acLanes)) {
+          const savedIds = Array.isArray(plan[laneKey]) ? plan[laneKey] : [];
+          acLanes[laneKey] = savedIds.map(function (id) { return acPlayersById.get(Number(id)); }).filter(Boolean);
+          document.getElementById('ac_rival_' + laneKey).value = plan.rivals && typeof plan.rivals[laneKey] === 'string' ? plan.rivals[laneKey] : '';
+          updateAcRivalSummary(laneKey);
+          document.getElementById('ac_result_' + laneKey).hidden = true;
+        }
+        document.getElementById('ac_loss_min_pct').value = Number(plan.loss_min_pct ?? 5);
+        document.getElementById('ac_loss_max_pct').value = Number(plan.loss_max_pct ?? 20);
+        document.getElementById('ac_optimizer_result').hidden = true;
+        renderAcRegistration();
+        renderAcLanes();
+        acHistory.splice(0, acHistory.length, captureAcState());
+        acHistoryIndex = 0;
+        document.getElementById('ac_save_status').textContent = 'Latest saved plan loaded.';
+      }
 
       function runAcDragAutoScroll() {
         if (acDraggedPlayerId == null || acDragPointerY == null) {
