@@ -8849,6 +8849,7 @@ def create_app() -> Flask:
                 "ok": True,
                 "has_control": False,
                 "owner_name": str(row["lock_username"] or "Another administrator"),
+                "plan": json.loads(str(row["ac_plan_json"] or "{}")),
             })
 
     @app.post("/alliance/ac/optimize")

@@ -245,9 +245,9 @@
     .ac-optimizer-result { margin-top:14px; padding:14px; border:1px solid rgba(242,199,106,.4); background:#111c26; border-radius:10px; }
     .ac-optimizer-lanes { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; margin-top:10px; }
     .ac-optimizer-lane { padding:10px; border:1px solid rgba(146,182,216,.25); border-radius:8px; }
-    .ac-lock-overlay { position:fixed; inset:0; z-index:1200; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(8,13,20,.88); }
+    .ac-lock-overlay { position:fixed; top:72px; left:50%; z-index:1200; width:min(460px, calc(100% - 24px)); transform:translateX(-50%); pointer-events:none; }
     .ac-lock-overlay[hidden] { display:none; }
-    .ac-lock-dialog { width:min(460px, 100%); padding:20px; border:1px solid rgba(242,199,106,.5); border-radius:8px; background:#111c26; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+    .ac-lock-dialog { padding:14px 16px; border:1px solid rgba(242,199,106,.5); border-radius:8px; background:rgba(17,28,38,.96); box-shadow:0 10px 30px rgba(0,0,0,.45); pointer-events:auto; }
     .ac-lock-dialog h3 { margin:0 0 8px; }
     @media (max-width:900px) { .ac-lanes, .ac-rival-grid, .ac-optimizer-lanes { grid-template-columns:1fr; } }
     @media (max-width:620px) { #ac_registration_list { columns:1; } .ac-registration-row { grid-template-columns:26px minmax(0, 1fr) 82px; } .ac-registration-power { display:none; } }
@@ -2517,7 +2517,7 @@
 
         {% if user.is_admin %}
         <div class="tab-panel" data-tab-panel="ac" style="display:none;">
-          <div id="ac_lock_overlay" class="ac-lock-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="ac_lock_title">
+          <div id="ac_lock_overlay" class="ac-lock-overlay" hidden role="status" aria-labelledby="ac_lock_title">
             <div class="ac-lock-dialog">
               <h3 id="ac_lock_title">AC is being edited</h3>
               <p id="ac_lock_message" class="muted"></p>
@@ -3354,6 +3354,12 @@
           setAcControlState(Boolean(payload.has_control), payload.owner_name || 'Another administrator');
           if (payload.has_control && action === 'takeover') {
             applyAcPlan(payload.plan || {});
+          } else if (!payload.has_control && payload.plan) {
+            const remotePlanSignature = JSON.stringify(payload.plan);
+            if (remotePlanSignature !== acObservedPlanSignature) {
+              applyAcPlan(payload.plan);
+              acObservedPlanSignature = remotePlanSignature;
+            }
           }
         } catch (error) {
           setAcControlState(false, error.message || 'Connection lost');
@@ -3386,6 +3392,7 @@
       setAcControlChecking();
       const acPlayersById = new Map(acRoster.map(function (player) { return [player.id, player]; }));
       const acSavedPlan = {{ (ac_plan or {}) | tojson }};
+      let acObservedPlanSignature = JSON.stringify(acSavedPlan);
       const acLanes = { lane_a: [], lane_b: [], lane_c: [] };
       for (const laneKey of Object.keys(acLanes)) {
         const savedIds = Array.isArray(acSavedPlan[laneKey]) ? acSavedPlan[laneKey] : [];
