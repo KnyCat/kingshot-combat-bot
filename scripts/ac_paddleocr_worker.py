@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+from bisect import bisect_left
 from difflib import SequenceMatcher
 from pathlib import Path
 
@@ -113,6 +114,16 @@ def extract(
         for row in parsed_rows
         if row["position"]
     ]
+    group_centers: list[float] = []
+    for current_group in range(group_index + 1):
+        centers = [float(row["center_y"]) for row in parsed_rows if int(row["group"]) == current_group]
+        group_centers.append(sum(centers) / len(centers))
+    for position_token in edge_positions:
+        expected_power_y = float(position_token["center_y"]) + image_width * 0.13
+        inferred_group = bisect_left(group_centers, expected_power_y)
+        anchor = (inferred_group, int(position_token["digits"]))
+        if anchor not in anchored_groups:
+            anchored_groups.append(anchor)
     for row in parsed_rows:
         position_value = int(row["position"])
         name = str(row["name"])
