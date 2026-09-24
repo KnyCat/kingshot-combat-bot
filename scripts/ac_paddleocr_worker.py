@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+from difflib import SequenceMatcher
 from pathlib import Path
 
 from paddleocr import PaddleOCR
@@ -54,7 +55,6 @@ def extract(
         if token["digits"]
         and 1 <= int(token["digits"]) <= 20
         and (token["center_x"] < image_width * 0.16 if side == "left" else token["center_x"] > image_width * 0.84)
-        and token["height"] >= image_width * 0.045
     ]
     powers = [
         token for token in selected
@@ -99,7 +99,12 @@ def extract(
     previous_name_key = ""
     for row in parsed_rows:
         name_key = str(row["name_key"])
-        if not name_key or name_key != previous_name_key:
+        same_player = bool(
+            name_key
+            and previous_name_key
+            and SequenceMatcher(None, name_key, previous_name_key).ratio() >= 0.72
+        )
+        if not same_player:
             group_index += 1
         row["group"] = group_index
         previous_name_key = name_key
