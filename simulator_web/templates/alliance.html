@@ -245,6 +245,10 @@
     .ac-optimizer-result { margin-top:14px; padding:14px; border:1px solid rgba(242,199,106,.4); background:#111c26; border-radius:10px; }
     .ac-optimizer-lanes { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; margin-top:10px; }
     .ac-optimizer-lane { padding:10px; border:1px solid rgba(146,182,216,.25); border-radius:8px; }
+    .ac-lock-overlay { position:fixed; inset:0; z-index:1200; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(8,13,20,.88); }
+    .ac-lock-overlay[hidden] { display:none; }
+    .ac-lock-dialog { width:min(460px, 100%); padding:20px; border:1px solid rgba(242,199,106,.5); border-radius:8px; background:#111c26; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+    .ac-lock-dialog h3 { margin:0 0 8px; }
     @media (max-width:900px) { .ac-lanes, .ac-rival-grid, .ac-optimizer-lanes { grid-template-columns:1fr; } }
     @media (max-width:620px) { #ac_registration_list { columns:1; } .ac-registration-row { grid-template-columns:26px minmax(0, 1fr) 82px; } .ac-registration-power { display:none; } }
     .player-table-scroll { width:100%; max-width:100%; overflow-x:auto; margin-top:12px; }
@@ -2513,6 +2517,13 @@
 
         {% if user.is_admin %}
         <div class="tab-panel" data-tab-panel="ac" style="display:none;">
+          <div id="ac_lock_overlay" class="ac-lock-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="ac_lock_title">
+            <div class="ac-lock-dialog">
+              <h3 id="ac_lock_title">AC is being edited</h3>
+              <p id="ac_lock_message" class="muted"></p>
+              <button type="button" id="ac_take_control_btn">Take control</button>
+            </div>
+          </div>
           <div class="card">
             <h2 style="margin-top:0;">Alliance Championship</h2>
             <p class="muted">Choose one of two Auto-build strategies: two strong lanes with one sacrifice lane, or one very strong lane with two balanced medium lanes. Add rival lineups from screenshots, simulate battles with a dynamic power-loss range, and calculate the lineup with the highest estimated victory chance if the rival keeps the same players but moves them between lanes. Use Ctrl+Z to undo changes and Ctrl+Shift+Z to redo them.</p>
@@ -3232,6 +3243,9 @@
         for (const panel of document.querySelectorAll('.tab-panel')) {
           panel.style.display = panel.dataset.tabPanel === target ? '' : 'none';
         }
+        if (target === 'ac') window.setTimeout(function () {
+          if (typeof ensureAcControl === 'function') ensureAcControl();
+        }, 0);
         trackUsageSection(target);
       }
 
@@ -3295,6 +3309,57 @@
           { id: {{ member.id | int }}, name: {{ (member.player_name or member.discord_username or 'Player') | tojson }}, power: {{ member.power_ac | int }} },
         {% endfor %}
       ];
+      const acLockToken = sessionStorage.getItem('acLockToken') || (window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random());
+      sessionStorage.setItem('acLockToken', acLockToken);
+      let acHasControl = false;
+      let acLockRequestPending = false;
+      let acHeartbeatTimer = null;
+
+      function setAcControlState(hasControl, ownerName) {
+        acHasControl = hasControl;
+        const overlay = document.getElementById('ac_lock_overlay');
+        const panel = document.querySelector('[data-tab-panel="ac"]');
+        if (!overlay || !panel) return;
+        overlay.hidden = hasControl;
+        document.getElementById('ac_lock_message').textContent = hasControl ? '' : (ownerName + ' is currently working in this section. Take control to load their latest saved work and continue editing.');
+        for (const control of panel.querySelectorAll('button, input, textarea, select')) {
+          if (control.id !== 'ac_take_control_btn') control.disabled = !hasControl;
+        }
+      }
+
+      async function requestAcControl(action) {
+        if (acLockRequestPending) return;
+        acLockRequestPending = true;
+        try {
+          const response = await fetch('/alliance/ac/lock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: action, lock_token: acLockToken })
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || 'Could not check AC editing control.');
+          setAcControlState(Boolean(payload.has_control), payload.owner_name || 'Another administrator');
+          if (payload.has_control && action === 'takeover') window.location.assign('/alliance?tab=ac');
+        } catch (error) {
+          setAcControlState(false, error.message || 'Connection lost');
+        } finally {
+          acLockRequestPending = false;
+        }
+      }
+
+      function ensureAcControl() {
+        requestAcControl(acHasControl ? 'heartbeat' : 'acquire');
+        window.clearInterval(acHeartbeatTimer);
+        acHeartbeatTimer = window.setInterval(function () {
+          const panel = document.querySelector('[data-tab-panel="ac"]');
+          if (panel && panel.style.display !== 'none') requestAcControl(acHasControl ? 'heartbeat' : 'acquire');
+        }, 20000);
+      }
+
+      document.getElementById('ac_take_control_btn').addEventListener('click', function () {
+        requestAcControl('takeover');
+      });
+      setAcControlState(false, 'Checking editing control');
       const acPlayersById = new Map(acRoster.map(function (player) { return [player.id, player]; }));
       const acSavedPlan = {{ (ac_plan or {}) | tojson }};
       const acLanes = { lane_a: [], lane_b: [], lane_c: [] };
@@ -3652,8 +3717,10 @@
       }
 
       async function acPost(url, body) {
+        if (url === '/alliance/ac/save') body = Object.assign({}, body || {}, { lock_token: acLockToken });
         const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
         const payload = await response.json();
+        if (response.status === 409 && payload.lock_lost) setAcControlState(false, 'Another administrator');
         if (!response.ok) throw new Error(payload.error || 'AC request failed.');
         return payload;
       }

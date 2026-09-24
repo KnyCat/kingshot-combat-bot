@@ -5021,6 +5021,12 @@ def _init_alliance_registry_db() -> None:
             connection.execute("ALTER TABLE alliances ADD COLUMN nap4_cache_updated_at TEXT")
         if "ac_plan_json" not in alliance_columns:
             connection.execute("ALTER TABLE alliances ADD COLUMN ac_plan_json TEXT")
+        if "ac_lock_token" not in alliance_columns:
+            connection.execute("ALTER TABLE alliances ADD COLUMN ac_lock_token TEXT")
+        if "ac_lock_user_id" not in alliance_columns:
+            connection.execute("ALTER TABLE alliances ADD COLUMN ac_lock_user_id INTEGER")
+        if "ac_lock_updated_at" not in alliance_columns:
+            connection.execute("ALTER TABLE alliances ADD COLUMN ac_lock_updated_at TEXT")
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS alliance_players (
@@ -8726,6 +8732,9 @@ def create_app() -> Flask:
         if not user or not user.get("alliance_id") or not user.get("is_admin"):
             return jsonify({"error": "Only alliance admins can save AC lanes."}), 403
         payload = request.get_json(silent=True) or {}
+        lock_token = str(payload.get("lock_token") or "").strip()
+        if not lock_token:
+            return jsonify({"error": "AC editing control is required before saving.", "lock_lost": True}), 409
         lanes = payload.get("lanes") if isinstance(payload.get("lanes"), dict) else {}
         raw_registered_ids = payload.get("registered_ids") if isinstance(payload.get("registered_ids"), list) else []
         registered_ids = [int(value) for value in raw_registered_ids if str(value).isdigit()]
@@ -8758,6 +8767,19 @@ def create_app() -> Flask:
             return jsonify({"error": "Every assigned AC player must be registered for the event."}), 400
 
         with _get_db_connection() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            lock_row = connection.execute(
+                "SELECT ac_lock_token, ac_lock_user_id, ac_lock_updated_at FROM alliances WHERE id = ?",
+                (int(user["alliance_id"]),),
+            ).fetchone()
+            lock_updated_at = datetime.fromisoformat(str(lock_row["ac_lock_updated_at"] or "1970-01-01T00:00:00+00:00"))
+            lock_expired = (datetime.now(timezone.utc) - lock_updated_at).total_seconds() > 120
+            if (
+                lock_expired
+                or str(lock_row["ac_lock_token"] or "") != lock_token
+                or int(lock_row["ac_lock_user_id"] or 0) != int(user["id"])
+            ):
+                return jsonify({"error": "Another administrator has taken control of AC.", "lock_lost": True}), 409
             valid_ids = {
                 int(row["id"])
                 for row in connection.execute(
@@ -8772,6 +8794,56 @@ def create_app() -> Flask:
                 (json.dumps(normalized), datetime.now(timezone.utc).isoformat(), int(user["alliance_id"])),
             )
         return jsonify({"ok": True, "lanes": normalized})
+
+    @app.post("/alliance/ac/lock")
+    def alliance_ac_lock() -> Any:
+        user = _get_current_user()
+        if not user or not user.get("alliance_id") or not user.get("is_admin"):
+            return jsonify({"error": "Only alliance admins can edit AC."}), 403
+        payload = request.get_json(silent=True) or {}
+        action = str(payload.get("action") or "acquire").strip().lower()
+        lock_token = str(payload.get("lock_token") or "").strip()[:200]
+        if action not in {"acquire", "heartbeat", "takeover"} or not lock_token:
+            return jsonify({"error": "Invalid AC lock request."}), 400
+
+        now = datetime.now(timezone.utc)
+        alliance_id = int(user["alliance_id"])
+        with _get_db_connection() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute(
+                """
+                SELECT alliances.ac_lock_token, alliances.ac_lock_user_id, alliances.ac_lock_updated_at,
+                       alliances.ac_plan_json, alliance_users.username AS lock_username
+                FROM alliances
+                LEFT JOIN alliance_users ON alliance_users.id = alliances.ac_lock_user_id
+                WHERE alliances.id = ?
+                """,
+                (alliance_id,),
+            ).fetchone()
+            updated_at = datetime.fromisoformat(str(row["ac_lock_updated_at"] or "1970-01-01T00:00:00+00:00"))
+            expired = (now - updated_at).total_seconds() > 120
+            owns_lock = (
+                str(row["ac_lock_token"] or "") == lock_token
+                and int(row["ac_lock_user_id"] or 0) == int(user["id"])
+            )
+            available = expired or not row["ac_lock_token"] or owns_lock
+            if action == "takeover" or (action in {"acquire", "heartbeat"} and available):
+                connection.execute(
+                    "UPDATE alliances SET ac_lock_token = ?, ac_lock_user_id = ?, ac_lock_updated_at = ? WHERE id = ?",
+                    (lock_token, int(user["id"]), now.isoformat(), alliance_id),
+                )
+                return jsonify({
+                    "ok": True,
+                    "has_control": True,
+                    "owner_name": str(user.get("username") or "Administrator"),
+                    "plan": json.loads(str(row["ac_plan_json"] or "{}")),
+                })
+
+            return jsonify({
+                "ok": True,
+                "has_control": False,
+                "owner_name": str(row["lock_username"] or "Another administrator"),
+            })
 
     @app.post("/alliance/ac/optimize")
     def alliance_ac_optimize() -> Any:
