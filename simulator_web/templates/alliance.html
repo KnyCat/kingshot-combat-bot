@@ -3352,7 +3352,11 @@
           const payload = await response.json();
           if (!response.ok) throw new Error(payload.error || 'Could not check AC editing control.');
           setAcControlState(Boolean(payload.has_control), payload.owner_name || 'Another administrator');
-          if (payload.has_control && action === 'takeover') window.location.assign('/alliance?tab=ac');
+          if (payload.has_control && action === 'takeover') {
+            const reloadUrl = new URL(window.location.href);
+            reloadUrl.searchParams.set('tab', 'ac');
+            window.location.assign(reloadUrl.toString());
+          }
         } catch (error) {
           setAcControlState(false, error.message || 'Connection lost');
         } finally {
