@@ -2565,6 +2565,10 @@
                 <section class="ac-rival-module">
                   <div class="ac-lane-head">
                     <h3>{{ lane_label }} vs Rival</h3>
+                    <span class="muted" id="ac_rival_total_{{ lane_key }}">0 / 20 · 0 Power AC</span>
+                  </div>
+                  <div class="row" style="margin-bottom:8px;">
+                    <button type="button" class="secondary ac-complete-rival-btn" data-lane="{{ lane_key }}">Complete lane</button>
                     <button type="button" class="secondary ac-clear-rival-btn" data-lane="{{ lane_key }}">Clear</button>
                   </div>
                   <div class="field">
@@ -3590,6 +3594,63 @@
         }).filter(Boolean);
       }
 
+      function medianAcValue(values) {
+        const sorted = values.filter(Number.isFinite).sort(function (left, right) { return left - right; });
+        if (!sorted.length) return 0;
+        const middle = Math.floor(sorted.length / 2);
+        return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+      }
+
+      function updateAcRivalSummary(laneKey) {
+        const rivals = parseAcRivals(document.getElementById('ac_rival_' + laneKey).value);
+        const totalPower = rivals.reduce(function (total, rival) { return total + rival.power; }, 0);
+        document.getElementById('ac_rival_total_' + laneKey).textContent = rivals.length + ' / 20 · ' + formatAcPower(totalPower) + ' Power AC';
+      }
+
+      function ownAcPowerStep() {
+        const steps = [];
+        for (const lane of Object.values(acLanes)) {
+          const powers = lane.map(function (player) { return Number(player.power || 0); }).filter(Boolean).sort(function (left, right) { return right - left; });
+          for (let index = 1; index < powers.length; index += 1) steps.push(powers[index] - powers[index - 1]);
+        }
+        return medianAcValue(steps);
+      }
+
+      function completeAcRivalLane(laneKey) {
+        const input = document.getElementById('ac_rival_' + laneKey);
+        const known = parseAcRivals(input.value).filter(function (rival) { return rival.id >= 1 && rival.id <= 20; });
+        if (!known.length) throw new Error('Add at least one rival before completing the lane.');
+        const byPosition = new Map(known.map(function (rival) { return [rival.id, rival]; }));
+        const slopes = [];
+        for (let left = 0; left < known.length; left += 1) {
+          for (let right = left + 1; right < known.length; right += 1) {
+            const distance = known[right].id - known[left].id;
+            if (distance) slopes.push((known[right].power - known[left].power) / distance);
+          }
+        }
+        let trend = slopes.length ? medianAcValue(slopes) : ownAcPowerStep();
+        const medianPower = medianAcValue(known.map(function (rival) { return rival.power; }));
+        const maximumStep = Math.max(1, medianPower * 0.15);
+        trend = Math.max(-maximumStep, Math.min(maximumStep, trend));
+        for (let position = 1; position <= 20; position += 1) {
+          if (byPosition.has(position)) continue;
+          const lower = known.filter(function (rival) { return rival.id < position; }).sort(function (left, right) { return right.id - left.id; })[0];
+          const upper = known.filter(function (rival) { return rival.id > position; }).sort(function (left, right) { return left.id - right.id; })[0];
+          let power;
+          if (lower && upper) {
+            power = lower.power + (upper.power - lower.power) * (position - lower.id) / (upper.id - lower.id);
+          } else {
+            const anchor = lower || upper;
+            power = anchor.power + trend * (position - anchor.id);
+          }
+          byPosition.set(position, { id: position, name: 'RIVAL', power: Math.max(1, Math.round(power)) });
+        }
+        input.value = Array.from(byPosition.values()).sort(function (left, right) { return left.id - right.id; }).map(function (rival) {
+          return rival.id + ' - ' + rival.name + ' - ' + Math.round(rival.power).toLocaleString('de-DE');
+        }).join('\n');
+        updateAcRivalSummary(laneKey);
+      }
+
       async function acPost(url, body) {
         const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
         const payload = await response.json();
@@ -3636,6 +3697,7 @@
             return acPlayersById.get(Number(id));
           }).filter(Boolean);
           document.getElementById('ac_rival_' + laneKey).value = state.rivals[laneKey] || '';
+          updateAcRivalSummary(laneKey);
           document.getElementById('ac_result_' + laneKey).hidden = true;
         }
         document.getElementById('ac_loss_min_pct').value = state.lossMinPct;
@@ -3683,13 +3745,30 @@
       });
 
       for (const laneKey of Object.keys(acLanes)) {
-        document.getElementById('ac_rival_' + laneKey).addEventListener('input', scheduleAcSave);
+        const rivalInput = document.getElementById('ac_rival_' + laneKey);
+        rivalInput.addEventListener('input', function () {
+          updateAcRivalSummary(laneKey);
+          scheduleAcSave();
+        });
+        updateAcRivalSummary(laneKey);
       }
       function clearAcRivalLane(laneKey) {
         document.getElementById('ac_rival_' + laneKey).value = '';
         document.getElementById('ac_result_' + laneKey).hidden = true;
         document.getElementById('ac_ocr_status_' + laneKey).textContent = '';
+        updateAcRivalSummary(laneKey);
       }
+      document.querySelectorAll('.ac-complete-rival-btn').forEach(function (button) {
+        button.addEventListener('click', function () {
+          try {
+            completeAcRivalLane(button.dataset.lane);
+            document.getElementById('ac_optimizer_result').hidden = true;
+            scheduleAcSave();
+          } catch (error) {
+            document.getElementById('ac_ocr_status_' + button.dataset.lane).textContent = error.message;
+          }
+        });
+      });
       document.querySelectorAll('.ac-clear-rival-btn').forEach(function (button) {
         button.addEventListener('click', function () {
           clearAcRivalLane(button.dataset.lane);
@@ -3731,6 +3810,7 @@
             document.getElementById('ac_rival_' + laneKey).value = payload.rivals.map(function (rival) {
               return rival.position + ' - ' + rival.name + ' - ' + rival.power.toLocaleString('de-DE');
             }).join('\n');
+            updateAcRivalSummary(laneKey);
             statusEl.textContent = payload.message;
             scheduleAcSave();
           } catch (error) {
