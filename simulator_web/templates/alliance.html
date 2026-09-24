@@ -3327,6 +3327,16 @@
         }
       }
 
+      function setAcControlChecking() {
+        const overlay = document.getElementById('ac_lock_overlay');
+        const panel = document.querySelector('[data-tab-panel="ac"]');
+        if (!overlay || !panel) return;
+        overlay.hidden = true;
+        for (const control of panel.querySelectorAll('button, input, textarea, select')) {
+          if (control.id !== 'ac_take_control_btn') control.disabled = true;
+        }
+      }
+
       async function requestAcControl(action) {
         if (acLockRequestPending) return;
         acLockRequestPending = true;
@@ -3359,7 +3369,7 @@
       document.getElementById('ac_take_control_btn').addEventListener('click', function () {
         requestAcControl('takeover');
       });
-      setAcControlState(false, 'Checking editing control');
+      setAcControlChecking();
       const acPlayersById = new Map(acRoster.map(function (player) { return [player.id, player]; }));
       const acSavedPlan = {{ (ac_plan or {}) | tojson }};
       const acLanes = { lane_a: [], lane_b: [], lane_c: [] };
