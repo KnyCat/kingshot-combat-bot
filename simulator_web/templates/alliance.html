@@ -2547,6 +2547,7 @@
               <button type="button" id="ac_auto_split_btn">Auto-build A / B / C</button>
               <button type="button" id="ac_sort_lanes_btn" class="secondary">Power ↓</button>
               <span id="ac_sync_players_status" class="muted" aria-live="polite"></span>
+              <span id="ac_control_status" class="muted" aria-live="polite"></span>
               <span id="ac_save_status" class="muted" aria-live="polite">All changes are saved automatically.</span>
             </div>
             <div class="ac-lanes">
@@ -3322,6 +3323,7 @@
         if (!overlay || !panel) return;
         overlay.hidden = hasControl;
         document.getElementById('ac_lock_message').textContent = hasControl ? '' : (ownerName + ' is currently working in this section. Take control to load their latest saved work and continue editing.');
+        document.getElementById('ac_control_status').textContent = hasControl ? 'You have editing control.' : ('Read only · ' + ownerName + ' has control.');
         for (const control of panel.querySelectorAll('button, input, textarea, select')) {
           if (control.id !== 'ac_take_control_btn') control.disabled = !hasControl;
         }
@@ -3332,6 +3334,7 @@
         const panel = document.querySelector('[data-tab-panel="ac"]');
         if (!overlay || !panel) return;
         overlay.hidden = true;
+        document.getElementById('ac_control_status').textContent = 'Checking editing control...';
         for (const control of panel.querySelectorAll('button, input, textarea, select')) {
           if (control.id !== 'ac_take_control_btn') control.disabled = true;
         }
@@ -3363,8 +3366,17 @@
         acHeartbeatTimer = window.setInterval(function () {
           const panel = document.querySelector('[data-tab-panel="ac"]');
           if (panel && panel.style.display !== 'none') requestAcControl(acHasControl ? 'heartbeat' : 'acquire');
-        }, 20000);
+        }, 3000);
       }
+
+      window.addEventListener('focus', function () {
+        const panel = document.querySelector('[data-tab-panel="ac"]');
+        if (panel && panel.style.display !== 'none') requestAcControl(acHasControl ? 'heartbeat' : 'acquire');
+      });
+      document.addEventListener('visibilitychange', function () {
+        const panel = document.querySelector('[data-tab-panel="ac"]');
+        if (!document.hidden && panel && panel.style.display !== 'none') requestAcControl(acHasControl ? 'heartbeat' : 'acquire');
+      });
 
       document.getElementById('ac_take_control_btn').addEventListener('click', function () {
         requestAcControl('takeover');
