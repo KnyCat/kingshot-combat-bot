@@ -8714,6 +8714,12 @@ def create_app() -> Flask:
             paddle_directory.cleanup()
 
         rivals = merge_ac_rivals(extracted_groups)
+        app.logger.warning(
+            "AC OCR summary side=%s per_image=%s merged=%s",
+            side,
+            extraction_counts,
+            [(rival.get("position"), rival.get("name"), rival.get("power")) for rival in rivals],
+        )
         if not rivals:
             return jsonify({"ok": False, "message": "No rival positions could be read. Use screenshots of the lane battle list."}), 400
         return jsonify({
